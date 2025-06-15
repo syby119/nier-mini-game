@@ -1,398 +1,429 @@
-import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useRef, useEffect, useMemo, useCallback } from 'react';
 import { BatchedMesh } from 'three';
 import * as THREE from 'three';
 import { euler, vec3 } from '@react-three/rapier';
 import PubSub from 'pubsub-js';
-import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial';
-import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry';
-import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2';
 import { HitEffectExpandingRingEffects } from './HitEffectExpandingRingEffects';
 import { createLine } from '../modules/createLine';
 import { useFixedFrameUpdate } from '../hook/useFixedFrameUpdate';
 
-export const HitEffects = () => {
+// Constants
+const ANIMATION_COUNT = 5;
+const TOTAL_PHASES = 8;
+const SCALE = 1.3;
+const EMISSIVE_INTENSITY = 0.047;
+const EFFECT_UPDATE_INTERVAL = 1; // frame
 
-    const COUNT = 5
+// Animation configuration
+interface AnimationState {
+    position: THREE.Vector3;
+    enabled: boolean;
+    animationIndex: number;
+}
+
+
+export const HitEffects = () => {
     const batchedMeshRef = useRef<BatchedMesh>(null);
     const animationsIndexRef = useRef<number>(-1);
-    const animationsRef = useRef<{
-        position: THREE.Vector3;
-        enabled: boolean;
-        animationIndex: number
-    }[]>([]);
-    const emptyMatrix4 = new THREE.Matrix4();
-    const emptyQuaternion = new THREE.Quaternion();
-    const emptyEuler = new THREE.Euler();
-    const scale = 1.3
+    const animationsRef = useRef<AnimationState[]>([]);
+    
+    // Reusable objects to avoid garbage collection
+    const reusableMatrix4 = useMemo(() => new THREE.Matrix4(), []);
+    const reusableQuaternion = useMemo(() => new THREE.Quaternion(), []);
+    const reusableEuler = useMemo(() => new THREE.Euler(), []);
 
-    const planeWidth = 0.02;
-    const planeHeight = 0.13;
-    const emissiveIntensity = 0.047;
+    // Cached geometries and materials
+    const geometries = useMemo(() => ({
+        plane: new THREE.PlaneGeometry(0.02, 0.13),
+        ring: new THREE.RingGeometry(0.040, 0.056, 32),
+        smallPlane: new THREE.PlaneGeometry(0.04, 0.04),
+    }), []);
 
-    // 使用 useMemo 缓存几何体和材质
-    const planeGeometry = useMemo(() => new THREE.PlaneGeometry(planeWidth, planeHeight), [planeWidth, planeHeight]);
-    const planeMaterial = useMemo(() => new THREE.MeshStandardMaterial({
-        color: 'white',
-        emissive: 'lightblue',
-        emissiveIntensity: emissiveIntensity,
-    }), [emissiveIntensity]);
-
-    const ringGeometry = useMemo(() => new THREE.RingGeometry(0.040, 0.056, 32), []);
-    const ringMaterial = useMemo(() => new THREE.MeshStandardMaterial({
-        color: 'white',
-        emissive: 'lightblue',
-        emissiveIntensity: emissiveIntensity + 0.005,
-    }), [emissiveIntensity]);
-
-    // 创建平面（用于 planeGeometry 的网格）
-    const createPlane = (position: THREE.Vector3, rotation: THREE.Euler, planeSize: number) => {
-        const geometry = new THREE.PlaneGeometry(planeSize, planeSize);
-        const material = new THREE.MeshStandardMaterial({
+    const materials = useMemo(() => ({
+        plane: new THREE.MeshStandardMaterial({
             color: 'white',
             emissive: 'lightblue',
-            emissiveIntensity: emissiveIntensity,
-        });
-        const mesh = new THREE.Mesh(geometry, material);
+            emissiveIntensity: EMISSIVE_INTENSITY,
+        }),
+        ring: new THREE.MeshStandardMaterial({
+            color: 'white',
+            emissive: 'lightblue',
+            emissiveIntensity: EMISSIVE_INTENSITY + 0.005,
+        }),
+        transparentPlane: new THREE.MeshStandardMaterial({
+            color: 'white',
+            opacity: 0.1,
+            transparent: true
+        }),
+        solidPlane: new THREE.MeshStandardMaterial({
+            color: 'white',
+            opacity: 1,
+            transparent: true
+        }),
+    }), []);
+
+    // Optimized helper functions
+    const createPlane = useCallback((position: THREE.Vector3, rotation: THREE.Euler, size: number, material?: THREE.Material) => {
+        const geometry = new THREE.PlaneGeometry(size, size);
+        const mat = material || materials.plane;
+        const mesh = new THREE.Mesh(geometry, mat);
         mesh.position.copy(position);
         mesh.rotation.copy(rotation);
         return mesh;
-    };
+    }, [materials.plane]);
 
-    const addDashedLine = (position: THREE.Vector3, rotation: THREE.Euler, length: number, dashSize: number, gapSize: number, lineWidth: number) => {
+    const createDashedLine = useCallback((position: THREE.Vector3, rotation: THREE.Euler, length: number, dashSize: number, gapSize: number, lineWidth: number) => {
         const line = createLine([[-length, 0, 0], [length, 0, 0]], 'white', true, dashSize, gapSize, lineWidth);
         line.position.copy(position);
         line.rotation.copy(rotation);
         return line;
-    };
+    }, []);
 
-    const addLine = (start: THREE.Vector3, end: THREE.Vector3, lineWidth: number) => {
+    const createSolidLine = useCallback((start: THREE.Vector3, end: THREE.Vector3, lineWidth: number) => {
         const line = createLine([start.toArray(), end.toArray()], 'white', false);
         line.material.linewidth = lineWidth;
-        return line
-    };
+        return line;
+    }, []);
 
-    const phase1 = (id: string): THREE.Group => {
-        // 创建一个原生的 THREE.Group 对象
-        const group = new THREE.Group();
-        group.name = id;
-        group.visible = false
+    // Phase creators with optimized implementations
+    const phaseCreators = useMemo(() => ({
+        phase1: (id: string): THREE.Group => {
+            const group = new THREE.Group();
+            group.name = id;
+            group.visible = false;
 
-        // 创建 InstancedMesh
-        const instancedMesh = new THREE.InstancedMesh(planeGeometry, planeMaterial, 4);
-        emptyMatrix4.compose(
-            vec3({ x: 0, y: 0, z: 0.056 }), // 位置
-            emptyQuaternion.setFromEuler(emptyEuler.clone().set(Math.PI / -2, 0, 0)), // 旋转
-            vec3({ x: 1, y: 1, z: 1 }) // 缩放
-        );
-        instancedMesh.setMatrixAt(0, emptyMatrix4.setPosition(0.058, 0, 0));
-        instancedMesh.setMatrixAt(1, emptyMatrix4.setPosition(-0.058, 0, 0));
-        emptyMatrix4.compose(
-            vec3({ x: 0, y: 0, z: 0.056 }), // 位置
-            emptyQuaternion.setFromEuler(emptyEuler.clone().set(Math.PI / -2, 0, Math.PI / 2)), // 旋转
-            vec3({ x: 1, y: 1, z: 1 }) // 缩放
-        );
-        instancedMesh.setMatrixAt(2, emptyMatrix4);
-        instancedMesh.setMatrixAt(3, emptyMatrix4.setPosition(0, 0, -0.056));
-        instancedMesh.instanceMatrix.needsUpdate = true;
+            // Create InstancedMesh for cross pattern
+            const instancedMesh = new THREE.InstancedMesh(geometries.plane, materials.plane, 4);
+            
+            // Set up cross pattern matrices
+            const positions = [
+                { x: 0.058, y: 0, z: 0 },
+                { x: -0.058, y: 0, z: 0 },
+                { x: 0, y: 0, z: 0.056 },
+                { x: 0, y: 0, z: -0.056 }
+            ];
+            
+            positions.forEach((pos, i) => {
+                const rotation = i < 2 ? 0 : Math.PI / 2;
+                reusableMatrix4.compose(
+                    vec3(pos),
+                    reusableQuaternion.setFromEuler(reusableEuler.set(Math.PI / -2, 0, rotation)),
+                    vec3({ x: 1, y: 1, z: 1 })
+                );
+                instancedMesh.setMatrixAt(i, reusableMatrix4);
+            });
+            instancedMesh.instanceMatrix.needsUpdate = true;
 
-        // 创建 Mesh
-        const mesh = new THREE.Mesh(ringGeometry, ringMaterial);
-        mesh.rotation.x = Math.PI / -2;
+            // Create ring
+            const ring = new THREE.Mesh(geometries.ring, materials.ring);
+            ring.rotation.x = Math.PI / -2;
 
-        // 将对象添加到组中
-        group.add(instancedMesh);
-        group.add(mesh);
+            group.add(instancedMesh, ring);
+            group.scale.setScalar(SCALE);
+            return group;
+        },
 
-        group.scale.set(scale, scale, scale);
-        return group;
-    };
+        phase2: (id: string): THREE.Group => {
+            const group = new THREE.Group();
+            group.name = id;
+            group.visible = false;
 
-    const phase2 = (id: string): THREE.Group => {
-        const lineLength = 0.026;
-        const planeSize = 0.013;
+            const lineLength = 0.026;
+            const planeSize = 0.013;
 
-        // 创建一个原生的 THREE.Group 对象
-        const group = new THREE.Group();
-        group.name = id;
-        group.visible = false;
-
-
-        // 创建并添加线条和网格到组中
-        const addLineAndPlane = (linePosition: THREE.Vector3, lineRotation: THREE.Euler, planePosition: THREE.Vector3, planeRotation: THREE.Euler) => {
-            const line = createLine([[-lineLength, 0, 0], [lineLength, 0, 0]], 'white', true);
-            line.position.copy(linePosition);
-            line.rotation.copy(lineRotation);
-            group.add(line);
-
-            const plane = createPlane(planePosition, planeRotation, planeSize);
-            group.add(plane);
-        };
-
-        addLineAndPlane(
-            vec3({ x: 0, y: 0, z: 0.056 }),
-            euler({ x: Math.PI / -2, y: 0, z: 0 }),
-            vec3({ x: -0.03, y: 0, z: 0.056 }),
-            euler({ x: Math.PI / -2, y: 0, z: Math.PI / 4 })
-        );
-
-        addLineAndPlane(
-            vec3({ x: 0, y: 0, z: -0.056 }),
-            euler({ x: Math.PI / -2, y: 0, z: 0 }),
-            vec3({ x: 0.03, y: 0, z: -0.056 }),
-            euler({ x: Math.PI / -2, y: 0, z: Math.PI / 4 })
-        );
-
-        addLineAndPlane(
-            vec3({ x: 0.062, y: 0, z: 0 }),
-            euler({ x: Math.PI / -2, y: 0, z: Math.PI / 2 }),
-            vec3({ x: 0.062, y: 0, z: -0.027 }),
-            euler({ x: Math.PI / -2, y: 0, z: Math.PI / 4 })
-        );
-
-        addLineAndPlane(
-            vec3({ x: -0.062, y: 0, z: 0 }),
-            euler({ x: Math.PI / -2, y: 0, z: Math.PI / 2 }),
-            vec3({ x: -0.062, y: 0, z: 0.027 }),
-            euler({ x: Math.PI / -2, y: 0, z: Math.PI / 4 })
-        );
-
-        group.add(createPlane(vec3({ x: 0.041, y: 0, z: 0 }), euler({ x: Math.PI / -2, y: 0, z: Math.PI / 4 }), planeSize));
-        group.add(createPlane(vec3({ x: -0.041, y: 0, z: 0 }), euler({ x: Math.PI / -2, y: 0, z: Math.PI / 4 }), planeSize));
-        group.add(createPlane(vec3({ x: 0, y: 0, z: 0.041 }), euler({ x: Math.PI / -2, y: 0, z: Math.PI / 4 }), planeSize));
-        group.add(createPlane(vec3({ x: 0, y: 0, z: -0.041 }), euler({ x: Math.PI / -2, y: 0, z: Math.PI / 4 }), planeSize));
-
-        group.scale.set(scale, scale, scale);
-        return group;
-    };
-
-
-    const phase3 = (id: string): THREE.Group => {
-        const lineLength = 0.07;
-        const smallLineLength = 0.03;
-        const lineWidth = 4;
-        const group = new THREE.Group();
-        group.name = id;
-        group.visible = false;
-        group.add(addDashedLine(
-            vec3({ x: 0.06, y: 0, z: 0.05 }),
-            euler({ x: Math.PI / -2, y: 0, z: Math.PI / 4 }),
-            lineLength,
-            0.03,
-            0.015,
-            lineWidth
-        ))
-        group.add(addDashedLine(
-            vec3({ x: -0.06, y: 0, z: -0.058 }),
-            euler({ x: Math.PI / -2, y: 0, z: Math.PI / 4 }),
-            lineLength,
-            0.03,
-            0.015,
-            lineWidth
-        ))
-        group.add(addDashedLine(
-            vec3({ x: -0.017, y: 0, z: -0.016 }),
-            euler({ x: Math.PI / -2, y: 0, z: Math.PI / 4 }),
-            smallLineLength,
-            0.01,
-            0.03,
-            lineWidth
-        ))
-        group.add(addDashedLine(
-            vec3({ x: 0.017, y: 0, z: 0.016 }),
-            euler({ x: Math.PI / -2, y: 0, z: Math.PI / 4 }),
-            smallLineLength,
-            0.01,
-            0.03,
-            lineWidth
-        ))
-        group.scale.set(scale, scale, scale);
-        return group;
-    };
-
-    const phase4 = (id: string) => {
-        return phase3(id)
-    }
-
-    const phase5 = (id: string): THREE.Group => {
-        const range = 0.08;
-        const lineWidth = 1;
-        const group = new THREE.Group();
-        group.visible = false;
-        group.name = id
-        const points = [
-            vec3({ x: range, y: 0, z: -range }),  // Bottom right
-            vec3({ x: -range, y: 0, z: -range }), // Bottom left
-            vec3({ x: -range, y: 0, z: range }),  // Top left
-            vec3({ x: range, y: 0, z: range }),    // Top right
-        ];
-        group.add(addLine(points[0], points[1], lineWidth));
-        group.add(addLine(points[1], points[2], lineWidth));
-        group.add(addLine(points[2], points[3], lineWidth));
-        group.add(addLine(points[3], points[0], lineWidth));
-        const addPlane = (position: THREE.Vector3) => {
-            const mesh = new THREE.Mesh(
-                new THREE.PlaneGeometry(0.04, 0.04),
-                new THREE.MeshStandardMaterial({ color: 'white', opacity: 0.1, transparent: true })
-            );
-            mesh.position.copy(position);
-            mesh.rotation.copy(euler({ x: Math.PI / -2, y: 0, z: 0 }));
-            group.add(mesh);
-        };
-
-        // 添加平面
-        addPlane(vec3({ x: range - 0.02, y: 0, z: range - 0.02 }));
-        addPlane(vec3({ x: range - 0.14, y: 0, z: range - 0.02 }));
-        addPlane(vec3({ x: range - 0.02, y: 0, z: range - 0.14 }));
-        addPlane(vec3({ x: -range + 0.02, y: 0, z: -range + 0.02 }));
-
-        group.scale.set(scale, scale, scale);
-        return group;
-    };
-
-    const phase6 = (id: string): THREE.Group => {
-        const range = 0.08;
-
-        const group = new THREE.Group();
-        group.name = id;
-        group.visible = false;
-
-        // 创建并添加平面到组中
-        const addPlane = (position: THREE.Vector3, width: number, height: number, opacity: number) => {
-            const mesh = new THREE.Mesh(
-                new THREE.PlaneGeometry(width, height),
-                new THREE.MeshStandardMaterial({ color: 'white', opacity: opacity, transparent: true })
-            );
-            mesh.position.copy(position);
-            mesh.rotation.copy(euler({ x: Math.PI / -2, y: 0, z: 0 }));
-            group.add(mesh);
-        };
-
-        // 添加平面
-        addPlane(vec3({ x: range - 0.02, y: 0, z: range - 0.02 }), 0.04, 0.04, 0.1);
-        addPlane(vec3({ x: range - 0.14, y: 0, z: range - 0.02 }), 0.04, 0.04, 0.1);
-        addPlane(vec3({ x: range - 0.02, y: 0, z: range - 0.14 }), 0.04, 0.04, 0.1);
-        addPlane(vec3({ x: -range + 0.02, y: 0, z: -range + 0.02 }), 0.04, 0.04, 0.1);
-        addPlane(vec3({ x: -range + 0.08, y: 0, z: -range + 0.02 }), 0.08, 0.04, 1);
-        addPlane(vec3({ x: -range + 0.02, y: 0, z: -range + 0.08 }), 0.04, 0.08, 1);
-        addPlane(vec3({ x: range - 0.08, y: 0, z: range - 0.02 }), 0.08, 0.04, 1);
-        addPlane(vec3({ x: range - 0.02, y: 0, z: range - 0.08 }), 0.04, 0.08, 1);
-
-        group.scale.set(scale, scale, scale);
-        return group;
-    };
-
-
-    const phase7 = (id: string): THREE.Group => {
-        const lineLength = 0.085;
-        const lineWidth = 12;
-        const dashSize = 0.07;
-        const gapSize = 0.035;
-        const group = new THREE.Group();
-        group.visible = false;
-        group.name = id;
-        group.add(addDashedLine(vec3({ x: -0.055, y: 0, z: 0.045 }), euler({ x: Math.PI / -2, y: 0, z: Math.PI / -4 }), lineLength, dashSize, gapSize, lineWidth));
-        group.add(addDashedLine(vec3({ x: -0.015, y: 0, z: 0.012 }), euler({ x: Math.PI / -2, y: 0, z: Math.PI / -4 }), lineLength, dashSize, gapSize, lineWidth));
-        group.add(addDashedLine(vec3({ x: 0.018, y: 0, z: -0.02 }), euler({ x: Math.PI / -2, y: 0, z: Math.PI / -4 }), lineLength, dashSize, gapSize, lineWidth));
-        group.add(addDashedLine(vec3({ x: 0.055, y: 0, z: -0.055 }), euler({ x: Math.PI / -2, y: 0, z: Math.PI / -4 }), lineLength, dashSize, gapSize, lineWidth));
-        group.scale.set(scale, scale, scale);
-        return group;
-    };
-
-    const phase8 = (id: string): THREE.Group => {
-        const lineLength = 0.08;
-        const lineWidth = 15;
-        const group = new THREE.Group();
-        group.name = id;
-        group.visible = false;
-        group.add(addDashedLine(vec3({ x: 0.055, y: 0, z: 0.045 }), euler({ x: Math.PI / -2, y: 0, z: Math.PI / 4 }), lineLength, 0.012, 0.015, lineWidth));
-        group.add(addDashedLine(vec3({ x: -0.055, y: 0, z: -0.055 }), euler({ x: Math.PI / -2, y: 0, z: Math.PI / 4 }), lineLength, 0.012, 0.015, lineWidth));
-        group.scale.set(scale, scale, scale);
-        return group;
-    };
-
-
-    useFixedFrameUpdate((scene, delta) => {
-        if (batchedMeshRef.current == null) return
-        animationsRef.current.forEach((animation, index) => {
-            if (animation.enabled) {
-                animation.animationIndex++;
-                //update position
-                batchedMeshRef.current!.getObjectByName(`${phase1.name}-${index}`)!.position.copy(animation.position)
-                batchedMeshRef.current!.getObjectByName(`${phase2.name}-${index}`)!.position.copy(animation.position)
-                batchedMeshRef.current!.getObjectByName(`${phase3.name}-${index}`)!.position.copy(animation.position)
-                batchedMeshRef.current!.getObjectByName(`${phase4.name}-${index}`)!.position.copy(animation.position)
-                batchedMeshRef.current!.getObjectByName(`${phase5.name}-${index}`)!.position.copy(animation.position)
-                batchedMeshRef.current!.getObjectByName(`${phase6.name}-${index}`)!.position.copy(animation.position)
-                batchedMeshRef.current!.getObjectByName(`${phase7.name}-${index}`)!.position.copy(animation.position)
-                batchedMeshRef.current!.getObjectByName(`${phase8.name}-${index}`)!.position.copy(animation.position)
-                if (animation.animationIndex == 1) {
-                    batchedMeshRef.current!.getObjectByName(`${phase1.name}-${index}`)!.visible = true
-                } else if (animation.animationIndex == 2) {
-                    batchedMeshRef.current!.getObjectByName(`${phase1.name}-${index}`)!.visible = false
-                    batchedMeshRef.current!.getObjectByName(`${phase2.name}-${index}`)!.visible = true
-                } else if (animation.animationIndex == 3) {
-                    batchedMeshRef.current!.getObjectByName(`${phase2.name}-${index}`)!.visible = false
-                    batchedMeshRef.current!.getObjectByName(`${phase3.name}-${index}`)!.visible = true
-                } else if (animation.animationIndex == 4) {
-                    batchedMeshRef.current!.getObjectByName(`${phase3.name}-${index}`)!.visible = false
-                    batchedMeshRef.current!.getObjectByName(`${phase4.name}-${index}`)!.visible = true
-                } else if (animation.animationIndex == 5) {
-                    batchedMeshRef.current!.getObjectByName(`${phase4.name}-${index}`)!.visible = false
-                    batchedMeshRef.current!.getObjectByName(`${phase5.name}-${index}`)!.visible = true
-                } else if (animation.animationIndex == 6) {
-                    batchedMeshRef.current!.getObjectByName(`${phase5.name}-${index}`)!.visible = false
-                    batchedMeshRef.current!.getObjectByName(`${phase6.name}-${index}`)!.visible = true
-                } else if (animation.animationIndex == 7) {
-                    batchedMeshRef.current!.getObjectByName(`${phase6.name}-${index}`)!.visible = false
-                    batchedMeshRef.current!.getObjectByName(`${phase7.name}-${index}`)!.visible = true
-                } else if (animation.animationIndex == 8) {
-                    batchedMeshRef.current!.getObjectByName(`${phase7.name}-${index}`)!.visible = false
-                    batchedMeshRef.current!.getObjectByName(`${phase8.name}-${index}`)!.visible = true
-                } else {
-                    batchedMeshRef.current!.getObjectByName(`${phase8.name}-${index}`)!.visible = false
-                    animation.enabled = false
-                    animation.animationIndex = 0
+            // Configuration for lines and planes
+            const configs = [
+                {
+                    linePos: vec3({ x: 0, y: 0, z: 0.056 }),
+                    lineRot: euler({ x: Math.PI / -2, y: 0, z: 0 }),
+                    planePos: vec3({ x: -0.03, y: 0, z: 0.056 }),
+                    planeRot: euler({ x: Math.PI / -2, y: 0, z: Math.PI / 4 })
+                },
+                {
+                    linePos: vec3({ x: 0, y: 0, z: -0.056 }),
+                    lineRot: euler({ x: Math.PI / -2, y: 0, z: 0 }),
+                    planePos: vec3({ x: 0.03, y: 0, z: -0.056 }),
+                    planeRot: euler({ x: Math.PI / -2, y: 0, z: Math.PI / 4 })
+                },
+                {
+                    linePos: vec3({ x: 0.062, y: 0, z: 0 }),
+                    lineRot: euler({ x: Math.PI / -2, y: 0, z: Math.PI / 2 }),
+                    planePos: vec3({ x: 0.062, y: 0, z: -0.027 }),
+                    planeRot: euler({ x: Math.PI / -2, y: 0, z: Math.PI / 4 })
+                },
+                {
+                    linePos: vec3({ x: -0.062, y: 0, z: 0 }),
+                    lineRot: euler({ x: Math.PI / -2, y: 0, z: Math.PI / 2 }),
+                    planePos: vec3({ x: -0.062, y: 0, z: 0.027 }),
+                    planeRot: euler({ x: Math.PI / -2, y: 0, z: Math.PI / 4 })
                 }
+            ];
+
+            configs.forEach(config => {
+                const line = createLine([[-lineLength, 0, 0], [lineLength, 0, 0]], 'white', true);
+                line.position.copy(config.linePos);
+                line.rotation.copy(config.lineRot);
+                group.add(line);
+
+                const plane = createPlane(config.planePos, config.planeRot, planeSize);
+                group.add(plane);
+            });
+
+            // Additional corner planes
+            const cornerPositions = [
+                vec3({ x: 0.041, y: 0, z: 0 }),
+                vec3({ x: -0.041, y: 0, z: 0 }),
+                vec3({ x: 0, y: 0, z: 0.041 }),
+                vec3({ x: 0, y: 0, z: -0.041 })
+            ];
+
+            cornerPositions.forEach(pos => {
+                group.add(createPlane(pos, euler({ x: Math.PI / -2, y: 0, z: Math.PI / 4 }), planeSize));
+            });
+
+            group.scale.setScalar(SCALE);
+            return group;
+        },
+
+        phase3: (id: string): THREE.Group => {
+            const group = new THREE.Group();
+            group.name = id;
+            group.visible = false;
+
+            const lineConfigs = [
+                { pos: vec3({ x: 0.06, y: 0, z: 0.05 }), length: 0.07, dash: 0.03, gap: 0.015 },
+                { pos: vec3({ x: -0.06, y: 0, z: -0.058 }), length: 0.07, dash: 0.03, gap: 0.015 },
+                { pos: vec3({ x: -0.017, y: 0, z: -0.016 }), length: 0.03, dash: 0.01, gap: 0.03 },
+                { pos: vec3({ x: 0.017, y: 0, z: 0.016 }), length: 0.03, dash: 0.01, gap: 0.03 }
+            ];
+
+            lineConfigs.forEach(config => {
+                group.add(createDashedLine(
+                    config.pos,
+                    euler({ x: Math.PI / -2, y: 0, z: Math.PI / 4 }),
+                    config.length,
+                    config.dash,
+                    config.gap,
+                    4
+                ));
+            });
+
+            group.scale.setScalar(SCALE);
+            return group;
+        },
+
+        phase4: (id: string): THREE.Group => {
+            return phaseCreators.phase3(id); // Reuse phase3
+        },
+
+        phase5: (id: string): THREE.Group => {
+            const group = new THREE.Group();
+            group.name = id;
+            group.visible = false;
+
+            const range = 0.08;
+            const points = [
+                vec3({ x: range, y: 0, z: -range }),
+                vec3({ x: -range, y: 0, z: -range }),
+                vec3({ x: -range, y: 0, z: range }),
+                vec3({ x: range, y: 0, z: range })
+            ];
+
+            // Create square outline
+            for (let i = 0; i < points.length; i++) {
+                const nextIndex = (i + 1) % points.length;
+                group.add(createSolidLine(points[i], points[nextIndex], 1));
             }
-        })
-    });
+
+            // Add corner planes
+            const planePositions = [
+                vec3({ x: range - 0.02, y: 0, z: range - 0.02 }),
+                vec3({ x: range - 0.14, y: 0, z: range - 0.02 }),
+                vec3({ x: range - 0.02, y: 0, z: range - 0.14 }),
+                vec3({ x: -range + 0.02, y: 0, z: -range + 0.02 })
+            ];
+
+            planePositions.forEach(pos => {
+                const mesh = new THREE.Mesh(geometries.smallPlane, materials.transparentPlane);
+                mesh.position.copy(pos);
+                mesh.rotation.copy(euler({ x: Math.PI / -2, y: 0, z: 0 }));
+                group.add(mesh);
+            });
+
+            group.scale.setScalar(SCALE);
+            return group;
+        },
+
+        phase6: (id: string): THREE.Group => {
+            const group = new THREE.Group();
+            group.name = id;
+            group.visible = false;
+
+            const range = 0.08;
+            const planeConfigs = [
+                { pos: vec3({ x: range - 0.02, y: 0, z: range - 0.02 }), size: [0.04, 0.04], material: materials.transparentPlane },
+                { pos: vec3({ x: range - 0.14, y: 0, z: range - 0.02 }), size: [0.04, 0.04], material: materials.transparentPlane },
+                { pos: vec3({ x: range - 0.02, y: 0, z: range - 0.14 }), size: [0.04, 0.04], material: materials.transparentPlane },
+                { pos: vec3({ x: -range + 0.02, y: 0, z: -range + 0.02 }), size: [0.04, 0.04], material: materials.transparentPlane },
+                { pos: vec3({ x: -range + 0.08, y: 0, z: -range + 0.02 }), size: [0.08, 0.04], material: materials.solidPlane },
+                { pos: vec3({ x: -range + 0.02, y: 0, z: -range + 0.08 }), size: [0.04, 0.08], material: materials.solidPlane },
+                { pos: vec3({ x: range - 0.08, y: 0, z: range - 0.02 }), size: [0.08, 0.04], material: materials.solidPlane },
+                { pos: vec3({ x: range - 0.02, y: 0, z: range - 0.08 }), size: [0.04, 0.08], material: materials.solidPlane }
+            ];
+
+            planeConfigs.forEach(config => {
+                const geometry = new THREE.PlaneGeometry(config.size[0], config.size[1]);
+                const mesh = new THREE.Mesh(geometry, config.material);
+                mesh.position.copy(config.pos);
+                mesh.rotation.copy(euler({ x: Math.PI / -2, y: 0, z: 0 }));
+                group.add(mesh);
+            });
+
+            group.scale.setScalar(SCALE);
+            return group;
+        },
+
+        phase7: (id: string): THREE.Group => {
+            const group = new THREE.Group();
+            group.name = id;
+            group.visible = false;
+
+            const lineConfigs = [
+                vec3({ x: -0.055, y: 0, z: 0.045 }),
+                vec3({ x: -0.015, y: 0, z: 0.012 }),
+                vec3({ x: 0.018, y: 0, z: -0.02 }),
+                vec3({ x: 0.055, y: 0, z: -0.055 })
+            ];
+
+            lineConfigs.forEach(pos => {
+                group.add(createDashedLine(
+                    pos,
+                    euler({ x: Math.PI / -2, y: 0, z: Math.PI / -4 }),
+                    0.085,
+                    0.07,
+                    0.035,
+                    12
+                ));
+            });
+
+            group.scale.setScalar(SCALE);
+            return group;
+        },
+
+        phase8: (id: string): THREE.Group => {
+            const group = new THREE.Group();
+            group.name = id;
+            group.visible = false;
+
+            const linePositions = [
+                vec3({ x: 0.055, y: 0, z: 0.045 }),
+                vec3({ x: -0.055, y: 0, z: -0.055 })
+            ];
+
+            linePositions.forEach(pos => {
+                group.add(createDashedLine(
+                    pos,
+                    euler({ x: Math.PI / -2, y: 0, z: Math.PI / 4 }),
+                    0.08,
+                    0.012,
+                    0.015,
+                    15
+                ));
+            });
+
+            group.scale.setScalar(SCALE);
+            return group;
+        }
+    }), [geometries, materials, createPlane, createDashedLine, createSolidLine, reusableMatrix4, reusableQuaternion, reusableEuler]);
+
+    // Optimized phase management
+    const phaseNames = useMemo(() => Object.keys(phaseCreators), [phaseCreators]);
+
+    // Frame counter for animation timing
+    const frameCounterRef = useRef<number>(0);
+
+    // Optimized animation update (every 5 frames)
+    const updateAnimations = useCallback(() => {
+        if (!batchedMeshRef.current) return;
+
+        // Increment frame counter
+        frameCounterRef.current++;
+
+        // Only update animation every 5 frames
+        if (frameCounterRef.current % EFFECT_UPDATE_INTERVAL !== 0) return;
+
+        animationsRef.current.forEach((animation, index) => {
+            if (!animation.enabled) return;
+
+            animation.animationIndex++;
+
+            // Update positions for all phases
+            phaseNames.forEach(phaseName => {
+                const obj = batchedMeshRef.current!.getObjectByName(`${phaseName}-${index}`);
+                if (obj) {
+                    obj.position.copy(animation.position);
+                }
+            });
+
+            // Handle phase visibility
+            const currentPhase = animation.animationIndex;
+            
+            phaseNames.forEach((phaseName, phaseIndex) => {
+                const obj = batchedMeshRef.current!.getObjectByName(`${phaseName}-${index}`);
+                if (obj) {
+                    obj.visible = (phaseIndex + 1) === currentPhase;
+                }
+            });
+
+            // Reset animation when complete
+            if (currentPhase > TOTAL_PHASES) {
+                phaseNames.forEach(phaseName => {
+                    const obj = batchedMeshRef.current!.getObjectByName(`${phaseName}-${index}`);
+                    if (obj) obj.visible = false;
+                });
+                animation.enabled = false;
+                animation.animationIndex = 0;
+            }
+        });
+    }, [phaseNames]);
+
+    useFixedFrameUpdate(updateAnimations);
+
+    // Optimized event handler
+    const handleHitAnimation = useCallback((msg: string, data: THREE.Vector3) => {
+        const nextIndex = animationsIndexRef.current < ANIMATION_COUNT - 1 
+            ? animationsIndexRef.current + 1 
+            : 0;
+        
+        animationsIndexRef.current = nextIndex;
+        animationsRef.current[nextIndex].position.copy(data);
+        animationsRef.current[nextIndex].enabled = true;
+    }, []);
 
     useEffect(() => {
-        const startHitAnimationToken = PubSub.subscribe('startHitAnimation', (msg: string, data: THREE.Vector3) => {
-            if (animationsIndexRef.current < COUNT - 1) {
-                animationsIndexRef.current += 1
-                animationsRef.current[animationsIndexRef.current].position = vec3({ x: data.x, y: data.y, z: data.z })
-                animationsRef.current[animationsIndexRef.current].enabled = true
-            } else {
-                animationsIndexRef.current = -1
-                animationsRef.current[0].position = vec3({ x: data.x, y: data.y, z: data.z })
-                animationsRef.current[0].enabled = true
-            }
+        const token = PubSub.subscribe('startHitAnimation', handleHitAnimation);
 
-        })
-        //reset first
-        batchedMeshRef.current?.clear()
-        for (let i = 0; i < COUNT; i++) {
+        // Initialize animations
+        batchedMeshRef.current?.clear();
+        animationsRef.current = [];
+
+        for (let i = 0; i < ANIMATION_COUNT; i++) {
             animationsRef.current.push({
                 position: vec3(),
                 enabled: false,
                 animationIndex: 0
-            })
-            batchedMeshRef.current?.add(phase1(`${phase1.name}-${i}`))
-            batchedMeshRef.current?.add(phase2(`${phase2.name}-${i}`))
-            batchedMeshRef.current?.add(phase3(`${phase3.name}-${i}`))
-            batchedMeshRef.current?.add(phase4(`${phase4.name}-${i}`))
-            batchedMeshRef.current?.add(phase5(`${phase5.name}-${i}`))
-            batchedMeshRef.current?.add(phase6(`${phase6.name}-${i}`))
-            batchedMeshRef.current?.add(phase7(`${phase7.name}-${i}`))
-            batchedMeshRef.current?.add(phase8(`${phase8.name}-${i}`))
+            });
+
+            // Add all phase objects
+            Object.entries(phaseCreators).forEach(([phaseName, creator]) => {
+                batchedMeshRef.current?.add(creator(`${phaseName}-${i}`));
+            });
         }
+
         return () => {
-            PubSub.unsubscribe(startHitAnimationToken)
-        }
-    }, [])
-
-
+            PubSub.unsubscribe(token);
+        };
+    }, [phaseCreators, handleHitAnimation]);
 
     return (
         <>

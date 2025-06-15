@@ -12,27 +12,37 @@ export default function StartTitleOverlay() {
     const respawnPlayer = usePlayerStore(state => state.respawnPlayer)
     const setShowOverlay = useOverlayStore(state => state.setShowOverlay)
     const { stop: stopAudio, play: playAudio } = useAudioStore();
+    
+    // Check if we should skip title animation in development mode
+    const shouldSkipTitleAnimation = process.env.NODE_ENV === 'development' && process.env.SKIP_TITLE_ANIMATION === 'true';
+    
     const [styles, api] = useSpring(() => ({
         from: { titleOpacity: 0, subTitleOpacity: 0 },
         to: async (next) => {
+            if (shouldSkipTitleAnimation) {
+                // Skip animation and immediately proceed to game
+                await next({ titleOpacity: 0, subTitleOpacity: 0 });
+                return;
+            }
+            
             if (process.env.NODE_ENV != 'development') {
                 playAudio('Weight of the World')
                 await new Promise((resolve) => setTimeout(resolve, 2000));
-                // 1. 先让标题和副标题逐步出现
+                // 1. First let title and subtitle appear gradually
                 await next({ titleOpacity: 1 });
                 await new Promise((resolve) => setTimeout(resolve, 1000));
                 await next({ subTitleOpacity: 1 });
 
-                // 2. 保持一段时间
+                // 2. Keep for a while
                 await new Promise((resolve) => setTimeout(resolve, 7000));
 
-                // 3. 同步消失
+                // 3. Disappear synchronously
                 await next({ titleOpacity: -0.5, subTitleOpacity: -0.5 });
             }
             await next({ titleOpacity: 0, subTitleOpacity: 0 });
         },
         onRest: () => {
-            // 动画结束后更新系统状态
+            // Update system state after animation ends
             updateSystemInfo({
                 titleScreenShowed: true,
                 currentPhase: '0',
@@ -43,10 +53,15 @@ export default function StartTitleOverlay() {
                 respawnPlayer()
             }, 200)
         },
-        config: { duration: 1000 },
+        config: { duration: shouldSkipTitleAnimation ? 0 : 1000 },
     }));
 
     const AnimatedDiv = animated('div');
+
+    // Don't render anything if we're skipping the animation
+    if (shouldSkipTitleAnimation) {
+        return null;
+    }
 
     return (
         <div className="flex items-center justify-center flex-col gap-2">

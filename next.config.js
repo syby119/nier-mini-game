@@ -7,6 +7,10 @@ const nextConfig = {
     dangerouslyAllowSVG: true,
     domains: ["img.shields.io", "upload.wikimedia.org"],
   },
+  env: {
+    SKIP_LOADING_ANIMATION: process.env.SKIP_LOADING_ANIMATION,
+    SKIP_TITLE_ANIMATION: process.env.SKIP_TITLE_ANIMATION,
+  },
 };
 
 module.exports = withNextIntl(nextConfig);

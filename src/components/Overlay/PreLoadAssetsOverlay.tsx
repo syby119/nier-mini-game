@@ -9,6 +9,10 @@ const AnimatedDiv = animated('div');
 export default function PreLoadAssetsOverlay() {
     const doneInitRes = systemInfoStore((state) => state.doneInitRes);
     const { active, progress, errors, item, loaded, total } = useProgress()
+    
+    // Check if we should skip loading animation in development mode
+    const shouldSkipLoadingAnimation = process.env.NODE_ENV === 'development' && process.env.SKIP_LOADING_ANIMATION === 'true';
+    
     const [loadBackgroundStyle, loadBackgroundStyleApi] = useSpring<{
         opacity: number;
         transform: string;
@@ -16,14 +20,14 @@ export default function PreLoadAssetsOverlay() {
         opacity: 0,
         transform: 'scale(0)',
     }));
-    const radius = 120; // 圆的半径
-    const speed = 0.035; // 旋转速度
-    const [counterPreLoadTime, setCounterPreLoadTime] = useState<number>(3); // 预加载时间,最多3秒
+    const radius = 120; // Circle radius
+    const speed = 0.035; // Rotation speed
+    const [counterPreLoadTime, setCounterPreLoadTime] = useState<number>(shouldSkipLoadingAnimation ? 0 : 3); // Preload time, max 3 seconds
 
-    const angleRef = useRef(0); // 保存当前角度
+    const angleRef = useRef(0); // Save current angle
     const loadRef = useRef<any>(null);
 
-    // 使用 react-spring 更新位置和旋转角度
+    // Use react-spring to update position and rotation angle
     const [playerStyle, playerStyledApi] = useSpring<{
         left?: string;
         top?: string;
@@ -34,20 +38,27 @@ export default function PreLoadAssetsOverlay() {
         opacity: 0,
     }));
 
+    // Skip animation effect if environment variable is set
     useEffect(() => {
+        if (shouldSkipLoadingAnimation) {
+            // Immediately complete the loading process
+            doneInitRes();
+            return;
+        }
+
         const timer = setInterval(() => {
-            angleRef.current += speed; // 每帧更新角度
+            angleRef.current += speed; // Update angle per frame
             if (loadRef.current) {
-                // 获取加载背景图的位置和尺寸
+                // Get loading background image position and size
                 const loadRect = loadRef.current.getBoundingClientRect();
                 const centerX = loadRect.x + loadRect.width / 3
                 const centerY = loadRect.y + loadRect.height / 3
 
-                // 根据当前角度计算飞机的位置和旋转角度
+                // Calculate plane position and rotation angle based on current angle
                 const x = centerX + radius * Math.cos(angleRef.current);
                 const y = centerY + radius * Math.sin(angleRef.current);
                 const rotation = (angleRef.current * 180) / Math.PI + 180
-                // 使用 react-spring 更新动画
+                // Use react-spring to update animation
                 playerStyledApi.start({
                     left: `${x}px`,
                     top: `${y}px`,
@@ -61,10 +72,10 @@ export default function PreLoadAssetsOverlay() {
         const updateCounter = setInterval(() => {
             setCounterPreLoadTime((prev) => {
                 if (prev <= 1) {
-                    clearInterval(updateCounter); // 在这里清除定时器
-                    return 0; // 返回 0，确保状态不再为负数
+                    clearInterval(updateCounter); // Clear timer here
+                    return 0; // Return 0 to ensure state is not negative
                 }
-                return prev - 1; // 继续递减
+                return prev - 1; // Continue decrementing
             });
         }, 1000);
 
@@ -72,9 +83,11 @@ export default function PreLoadAssetsOverlay() {
             clearInterval(timer);
             clearInterval(updateCounter);
         };
-    }, []);
+    }, [shouldSkipLoadingAnimation]);
 
     useEffect(() => {
+        if (shouldSkipLoadingAnimation) return;
+        
         loadBackgroundStyleApi.start({
             opacity: 1,
             config: { duration: 1000 },
@@ -84,9 +97,11 @@ export default function PreLoadAssetsOverlay() {
             config: { duration: 1000 },
             delay: 1000
         })
-    }, [])
+    }, [shouldSkipLoadingAnimation])
 
     useEffect(() => {
+        if (shouldSkipLoadingAnimation) return;
+        
         if (loaded === total && counterPreLoadTime <= 0) {
             loadBackgroundStyleApi.start({
                 opacity: 0,
@@ -102,7 +117,12 @@ export default function PreLoadAssetsOverlay() {
                 config: { duration: 1000 }
             })
         }
-    }, [total, loaded, counterPreLoadTime])
+    }, [total, loaded, counterPreLoadTime, shouldSkipLoadingAnimation])
+
+    // Don't render anything if we're skipping the animation
+    if (shouldSkipLoadingAnimation) {
+        return null;
+    }
 
     return (
         <div className='w-screen h-screen flex flex-col items-center justify-center'>

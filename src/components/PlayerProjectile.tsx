@@ -1,11 +1,9 @@
 import { RapierRigidBody, vec3, InstancedRigidBodyProps, InstancedRigidBodies, interactionGroups, CollisionTarget } from '@react-three/rapier';
-import React, { useContext, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import usePlayerStore, { IProjectile } from '../store/PlayerStore';
 import * as THREE from 'three';
 import systemInfoStore from '../store/SystemInfoStore';
 import { useFixedFrameUpdate } from '../hook/useFixedFrameUpdate';
-import useGamePauseStore from '../store/GamePauseStore';
-import { useFrame } from '@react-three/fiber';
 
 export default function PlayerProjectile() {
     const [overRangeLimit, setOverRangeLimit] = useState<"airWall" | "maxRange">("maxRange")
@@ -115,22 +113,6 @@ export default function PlayerProjectile() {
             }
         })
     })
-
-    const handleSubscribePausedProjectile = (isPaused: boolean) => {
-        projectileRigidBodies.current.forEach((projectileRigidBody, index) => {
-            if (!projectileRigidBody.isEnabled()) return
-            if (isPaused) {
-                projectileRigidBody.setLinvel(vec3({ x: 0, y: 0, z: 0 }), true)
-            } else {
-                const originalVel = originalVelocities.current[index];
-                if (originalVel) {
-                    projectileRigidBody.setLinvel(originalVel, true);
-                }
-            }
-        })
-    }
-    const isPausedSubscribe = useGamePauseStore.subscribe(state => state.isPaused, handleSubscribePausedProjectile);
-
 
     useEffect(() => {
         const shootProjectileToken = PubSub.subscribe('shootProjectile', (msg: string, data: IProjectile) => {
