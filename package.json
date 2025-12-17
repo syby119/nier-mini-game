@@ -29,7 +29,7 @@
     "leva": "^0.10.0",
     "leva-file-picker": "^1.2.3",
     "mongodb": "^6.15.0",
-    "next": "15.2.4",
+    "next": "15.2.8",
     "next-intl": "^4.0.2",
     "postcss": "8.5.3",
     "postprocessing": "^6.37.2",
