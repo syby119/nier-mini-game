@@ -1,0 +1,20 @@
+# Normalize text files in the repository and keep LF in working trees by default.
+* text=auto eol=lf
+
+# Windows-native scripts should keep CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Common binary assets must never be normalized.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.svg binary
+*.glb binary
+*.ttf binary
+*.ogg binary
+*.mp3 binary
