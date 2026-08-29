@@ -1,10 +1,7 @@
 import '../globals.css'
 import type { Metadata, Viewport } from 'next'
-import { Inter } from 'next/font/google'
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
-import { notFound } from 'next/navigation';
-import { routing } from '@/i18n/routing';
 
 export const viewport: Viewport = {
   themeColor: '#22201C',
@@ -37,7 +34,7 @@ export const metadata: Metadata = {
         alt: 'NieR: Automata - [E] Ending Mini-Game',
       },
     ],
-    locale: 'en_US',
+    locale: 'zh_HK',
     type: 'website',
   },
   twitter: {
@@ -57,10 +54,6 @@ export default async function LocaleLayout({
   params: any;
 }) {
   const { locale } = await params ?? {};
-  // Ensure that the incoming `locale` is valid
-  if (!routing.locales.includes(locale as any)) {
-    // Reset to the default locale
-  }
 
   // Providing all messages to the client
   // side is the easiest way to get started

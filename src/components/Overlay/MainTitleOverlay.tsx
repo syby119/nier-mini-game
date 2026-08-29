@@ -5,7 +5,6 @@ import systemInfoStore from '../../store/SystemInfoStore';
 import { useTranslations } from 'next-intl';
 import useAudioStore from '../../store/AudioStore';
 import { GamepadManager } from '../../modules/GamepadManager';
-import Link from 'next/link';
 import { useDetectGPU } from '@react-three/drei';
 import { TbDivide } from 'react-icons/tb';
 import { useOverlayStore } from '../../store/OverlayStore';
@@ -147,23 +146,6 @@ export default function MainTitleOverlay() {
                                 />
                                 Post Effects
                             </label>
-                        </div>
-                    </div>
-                    <div>
-                        <p>Language</p>
-                        <div className='flex flex-col gap-1 '>
-                            {[{ lang: 'en', text: 'English' }, { lang: 'zh-hk', text: '中文' }, {
-                                lang: 'jp',
-                                text: '日本語'
-                            }].map((item, index) => (
-                                <Link href={item.lang} key={index}>
-                                    <YoRHaButton
-                                        onClick={() => {
-                                        }}
-                                        text={item.text}
-                                    />
-                                </Link>
-                            ))}
                         </div>
                     </div>
                 </div>
