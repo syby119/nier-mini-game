@@ -2,7 +2,6 @@
 
 import React, { useEffect, useRef, useState } from 'react'
 import { animated, useSpring } from '@react-spring/web'
-import { TbExternalLink } from 'react-icons/tb'
 import systemInfoStore from '../../store/SystemInfoStore'
 import { useTranslations } from 'next-intl'
 import useAudioStore from '../../store/AudioStore'
@@ -14,7 +13,18 @@ import NierCoverScene from './NierCoverScene'
 
 const gamepadManager = new GamepadManager()
 const AnimatedDiv = animated('div')
-const MENU_ITEMS = ['new-game', 'settings', 'source'] as const
+const MENU_ITEMS = ['new-game', 'settings'] as const
+
+const getMenuLabel = (item: (typeof MENU_ITEMS)[number]) => {
+  switch (item) {
+    case 'new-game':
+      return 'New Game'
+    case 'settings':
+      return 'Setting'
+    default:
+      return ''
+  }
+}
 
 export default function MainTitleOverlay() {
   const updateSystemInfo = systemInfoStore((state) => state.updateSystemInfo)
@@ -111,9 +121,6 @@ export default function MainTitleOverlay() {
       playAudio('buttonClick')
       return
     }
-
-    playAudio('buttonClick')
-    window.open('https://github.com/kjjkjjzyayufqza/nier-mini-game', '_blank', 'noopener,noreferrer')
   }
 
   useEffect(() => {
@@ -200,12 +207,7 @@ export default function MainTitleOverlay() {
           <div className="mt-[20vh] flex flex-col items-center">
             {MENU_ITEMS.map((item, index) => {
               const selected = selectedIndex === index
-              const label =
-                item === 'new-game'
-                  ? 'New Game'
-                  : item === 'settings'
-                    ? 'Setting'
-                    : 'Source'
+              const label = getMenuLabel(item)
 
               return (
                 <button
@@ -227,7 +229,6 @@ export default function MainTitleOverlay() {
                   >
                     {selected && <span className="text-xs">◄</span>}
                     <span>{label}</span>
-                    {item === 'source' && <TbExternalLink className="text-base" />}
                   </span>
                 </button>
               )
