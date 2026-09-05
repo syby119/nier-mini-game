@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useMemo, useRef } from 'react'
-import { Canvas, useFrame, useThree } from '@react-three/fiber'
+import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import CoverParticleField from './CoverParticleField'
 
@@ -32,58 +32,22 @@ function shuffle(values: number[]) {
 }
 
 function BackgroundPlane() {
-  const materialRef = useRef<THREE.ShaderMaterial>(null)
-  const { viewport } = useThree()
-
-  useFrame((_, delta) => {
-    if (!materialRef.current) return
-    materialRef.current.uniforms.uTime.value += delta
-  })
+  const texture = useLoader(THREE.TextureLoader, '/images/nier_flower_field_4K.png')
+  const { viewport, size } = useThree()
+  const imageAspect = texture.image.width / texture.image.height
+  const viewportAspect = size.width / size.height
+  const coverScale =
+    imageAspect > viewportAspect
+      ? [imageAspect / viewportAspect, 1]
+      : [1, viewportAspect / imageAspect]
 
   return (
-    <mesh scale={[viewport.width, viewport.height, 1]} position={[0, 0, -4]}>
+    <mesh
+      scale={[viewport.width * coverScale[0], viewport.height * coverScale[1], 1]}
+      position={[0, 0, -4]}
+    >
       <planeGeometry args={[1, 1]} />
-      <shaderMaterial
-        ref={materialRef}
-        uniforms={{
-          uTime: { value: 0 },
-        }}
-        vertexShader={`
-          varying vec2 vUv;
-          void main() {
-            vUv = uv;
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-          }
-        `}
-        fragmentShader={`
-          uniform float uTime;
-          varying vec2 vUv;
-
-          float rand(vec2 p) {
-            return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
-          }
-
-          void main() {
-            vec2 uv = vUv;
-            vec3 topColor = vec3(0.06, 0.07, 0.15);
-            vec3 bottomColor = vec3(0.01, 0.015, 0.03);
-            vec3 color = mix(bottomColor, topColor, pow(1.0 - uv.y, 1.6));
-
-            float gridX = step(0.94, fract(uv.x * 240.0));
-            float gridY = step(0.94, fract(uv.y * 140.0));
-            float grid = max(gridX, gridY) * 0.035;
-
-            float noise = rand(floor(uv * vec2(320.0, 180.0) + uTime * 3.0)) * 0.03;
-            float vignette = smoothstep(0.95, 0.28, distance(uv, vec2(0.5)));
-            float mist = smoothstep(0.55, 1.0, 1.0 - uv.y) * 0.1;
-
-            color += vec3(grid + noise + mist);
-            color *= vignette;
-
-            gl_FragColor = vec4(color, 1.0);
-          }
-        `}
-      />
+      <meshBasicMaterial map={texture} toneMapped={false} />
     </mesh>
   )
 }
