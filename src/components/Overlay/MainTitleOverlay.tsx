@@ -195,12 +195,14 @@ export default function MainTitleOverlay() {
       <div className="relative z-10 flex h-full flex-col items-center justify-end px-6 pb-[7vh] pt-24 text-[#f2efdf]">
         <div className="w-full max-w-[980px]">
           <div className="flex flex-col items-center text-center">
-            <div className="font-serif text-[clamp(3rem,8vw,7rem)] leading-none tracking-[-0.08em] text-[#f7f4e8]">
-              The Reincarnation
-            </div>
-            <div className="mt-[-0.18em] flex items-center gap-3 font-serif text-[clamp(2.5rem,7vw,6rem)] leading-none tracking-[-0.08em] text-[#f7f4e8]">
-              <span>of</span>
-              <span className="bg-[#f7f4e8] px-4 py-1 text-[#111421]">Fate</span>
+            <div className="w-full max-w-[620px] aspect-[6.4/1] overflow-hidden">
+              <img
+                src="/images/nier-automata-logo.jpg"
+                alt="NieR:Automata"
+                width={700}
+                height={420}
+                className="h-full w-full object-cover object-center"
+              />
             </div>
           </div>
 
