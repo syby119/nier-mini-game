@@ -12,7 +12,6 @@ interface OverlayStore {
     mainTitleOverlay: true,
     continueOverlay: false,
     titleScreenOverlay: false,
-    requestHelpOverlay: false,
     finalConfirmOverlay: false,
     onlineResultOverlay: false,
     playerSummaryOverlay: false,
@@ -21,7 +20,6 @@ interface OverlayStore {
     requestPlayerInfoPhase3Overlay: false,
     requestPlayerInfoPhase4Overlay: false,
     thanksForPlayOverlay: false,
-    connectNetworkNoticeOverlay: false,
   };
   
   export const useOverlayStore = create<OverlayStore>()(

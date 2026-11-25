@@ -1,69 +1,13 @@
-import type { NextApiRequest, NextApiResponse } from "next";
-import clientPromise from "../../lib/mongodb";
+import type { NextApiRequest, NextApiResponse } from 'next'
+import { randomUUID } from 'node:crypto'
+import { saveScore } from '../../lib/playerSaves'
 
-type ResponseData = {
-  message: string;
-};
-
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
-) {
-  if (req.method !== "POST") {
-    res.status(400).json({ message: "Error" });
-  }
-  if (!req.cookies?.["id"]) {
-    res.status(400).json({ message: "Error" });
-  }
-  if (!req.body?.name) {
-    res.status(400).json({ message: "Error" });
-    return;
-  }
-  if (!req.body?.score && typeof req.body?.score !== "number") {
-    res.status(400).json({ message: "Error" });
-    return;
-  }
-  const score = parseInt(req.body.score as any);
-  if (score > 1000000) {
-    res.status(400).json({ message: "Error" });
-    return;
-  }
-
-  const client = await clientPromise;
-  const collection = client.db("nier").collection("player");
-  const existsData = await collection.findOne({
-    id: req.cookies?.["id"],
-  });
-
-  if (existsData) {
-    // 更新数据
-    await collection.updateOne(
-      {
-        id: req.cookies?.["id"],
-      },
-      {
-        $set: {
-          name: req.body.name,
-          score: score,
-          updatedAt: new Date(),
-        },
-      }
-    );
-    res.status(200).json({ message: "Success" });
-    return;
-  } else {
-    // 新增数据
-    await collection.insertOne({
-      enable: true,
-      id: req.cookies?.["id"],
-      name: req.body.name,
-      score: score,
-      content: "",
-      region: "",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-    res.status(200).json({ message: "Success" });
-    return;
-  }
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== 'POST') return res.status(405).end()
+  const { name, score } = req.body || {}
+  if (typeof name !== 'string' || !name.trim() || name.length > 32 ||
+    !Number.isSafeInteger(score) || score < 0 || score > 1000000) return res.status(400).end()
+  const id = await saveScore(req.cookies.id || randomUUID(), name.trim(), score)
+  if (id !== req.cookies.id) res.setHeader('Set-Cookie', 'id=' + id + '; Path=/; HttpOnly; SameSite=Lax; Max-Age=31536000')
+  return res.status(200).json({ message: 'Success' })
 }

@@ -66,6 +66,8 @@ export const EmptyEnemyData: EnemyProps[] = Array.from(
   }
 );
 
+// Selected from the 2017 English staff roll and grouped for the web game's waves.
+// In-game credits: https://www.youtube.com/watch?v=ZrG3WaeIwhk
 export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_0_0",
@@ -94,7 +96,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_2_0",
     initPosition: vec3({ x: -0.6, y: 0, z: 0.3 }),
-    text: "ORIGINAL DESIGN",
+    text: "CAST",
     phase: "2",
     nextPhase: "3",
     childrenIds: [],
@@ -105,7 +107,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_3_0",
     initPosition: vec3({ x: 0, y: 0, z: 0 }),
-    text: "SQUARE ENIX CO., LTD.",
+    text: "Japanese Voices",
     phase: "3",
     nextPhase: "4",
     childrenIds: [],
@@ -116,7 +118,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_4_0",
     initPosition: vec3({ x: 0.5, y: 0, z: 0 }),
-    text: "ORIGINAL GAME",
+    text: "2B",
     phase: "4",
     nextPhase: "5",
     childrenIds: ["enemy_4_1"],
@@ -128,7 +130,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_4_1",
     initPosition: vec3({ x: -0.5, y: 0, z: 0 }),
-    text: "NIER: AUTOMATA",
+    text: "Yui Ishikawa",
     phase: "4",
     childrenIds: [],
     strongType: StrongType.NORMAL,
@@ -138,7 +140,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_5_0",
     initPosition: vec3({ x: 0, y: 0, z: 0 }),
-    text: "Frameworks",
+    text: "9S",
     phase: "5",
     nextPhase: "6",
     childrenIds: [
@@ -157,7 +159,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_5_1",
     initPosition: vec3({ x: 0.6, y: 0, z: 0.3 }),
-    text: "React",
+    text: "Daisuke Namikawa",
     phase: "5",
     childrenIds: [],
     strongType: StrongType.VERY_EASY,
@@ -168,7 +170,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_5_2",
     initPosition: vec3({ x: -0.6, y: 0, z: 0.3 }),
-    text: "React Three Fiber",
+    text: "Tatsuhisa Suzuki",
     phase: "5",
     childrenIds: [],
     strongType: StrongType.VERY_EASY,
@@ -179,7 +181,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_5_3",
     initPosition: vec3({ x: -0.3, y: 0, z: 0.1 }),
-    text: "React Rapier",
+    text: "Hiroki Yasumoto",
     phase: "5",
     childrenIds: [],
     strongType: StrongType.VERY_EASY,
@@ -190,7 +192,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_5_4",
     initPosition: vec3({ x: 0.1, y: 0, z: 0.6 }),
-    text: "React Three Drei",
+    text: "Kaoru Akiyama",
     phase: "5",
     childrenIds: [],
     strongType: StrongType.VERY_EASY,
@@ -201,7 +203,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_5_5",
     initPosition: vec3({ x: 0.8, y: 0, z: 0.1 }),
-    text: "Three.js",
+    text: "Mai Kadowaki",
     phase: "5",
     childrenIds: [],
     strongType: StrongType.VERY_EASY,
@@ -212,7 +214,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_5_6",
     initPosition: vec3({ x: -0.5, y: 0, z: 0.5 }),
-    text: "Next.js",
+    text: "Natsuki Hanae",
     phase: "5",
     childrenIds: [],
     strongType: StrongType.NORMAL,
@@ -222,7 +224,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_5_7",
     initPosition: vec3({ x: 0.5, y: 0, z: 0.1 }),
-    text: "PubSub.js",
+    text: "A2",
     phase: "5",
     childrenIds: [],
     strongType: StrongType.NORMAL,
@@ -232,7 +234,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_5_8",
     initPosition: vec3({ x: 0.5, y: 0, z: 0.5 }),
-    text: "React Leva",
+    text: "Ayaka Suwa",
     phase: "5",
     childrenIds: [],
     strongType: StrongType.VERY_EASY,
@@ -242,7 +244,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_6_0",
     initPosition: vec3({ x: 0, y: 0, z: 0 }),
-    text: "Code Reference",
+    text: "English Voices",
     phase: "6",
     isImportantPhase: true,
     nextPhase: "7",
@@ -255,7 +257,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_6_1",
     initPosition: vec3({ x: 0.8, y: 0, z: 0.5 }),
-    text: "Wawa Sensei",
+    text: "2B",
     phase: "6",
     childrenIds: [],
     strongType: StrongType.NORMAL,
@@ -266,7 +268,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_6_2",
     initPosition: vec3({ x: 0.2, y: 0, z: 0.2 }),
-    text: "Third Person Controller (React Three Fiber Tutorial)",
+    text: "Kira Buckland",
     phase: "6",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -277,7 +279,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_6_3",
     initPosition: vec3({ x: -0.5, y: 0, z: 0.5 }),
-    text: "www.youtube.com/watch?v=yjpGVIe_Gy8&t",
+    text: "9S",
     phase: "6",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -288,7 +290,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_6_4",
     initPosition: vec3({ x: 0, y: 0, z: 0.7 }),
-    text: "github.com/wass08/r3f-3rd-person-controller-final",
+    text: "Kyle McCarley",
     phase: "6",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -299,7 +301,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_6_5",
     initPosition: vec3({ x: 0.5, y: 0, z: 0.5 }),
-    text: "Wawa Sensei",
+    text: "A2",
     phase: "6",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -310,7 +312,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_6_6",
     initPosition: vec3({ x: -0.5, y: 0, z: 0.2 }),
-    text: "Github Repository",
+    text: "Cherami Leigh",
     phase: "6",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -321,7 +323,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_6_7",
     initPosition: vec3({ x: 0.2, y: 0, z: 0.1 }),
-    text: "github.com/wass08",
+    text: "Greg Chun",
     phase: "6",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -332,7 +334,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_7_0",
     initPosition: vec3({ x: -0.8, y: 0, z: 0.5 }),
-    text: "Wawa Sensei",
+    text: "Additional Voices",
     phase: "7",
     nextPhase: "7_1",
     childrenIds: ["enemy_7_1", "enemy_7_2", "enemy_7_3"],
@@ -344,7 +346,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_7_1",
     initPosition: vec3({ x: 0.8, y: 0, z: 0.3 }),
-    text: "Build a 3D Multiplayer Mobile Shooter Game with Playroom and React Three Fiber",
+    text: "Robbie Daymond",
     phase: "7",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -355,7 +357,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_7_2",
     initPosition: vec3({ x: -0.8, y: 0, z: 0.5 }),
-    text: "www.youtube.com/watch?v=nQI8UNe6cfA",
+    text: "Kyle Hebert",
     phase: "7",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -366,7 +368,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_7_3",
     initPosition: vec3({ x: -0.8, y: 0, z: 0.6 }),
-    text: "github.com/wass08/r3f-playroom-multiplayer-shooter-game",
+    text: "Carrie Keranen",
     phase: "7",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -377,8 +379,8 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_7_4",
     initPosition: vec3({ x: 0.5, y: 0, z: 0.5 }),
-    text: "Wawa Sensei",
-    phase: "6",
+    text: "Lauren Landa",
+    phase: "7",
     childrenIds: [],
     strongType: StrongType.EASY,
     points: 100,
@@ -388,8 +390,8 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_7_5",
     initPosition: vec3({ x: -0.5, y: 0, z: 0.2 }),
-    text: "Github Repository",
-    phase: "6",
+    text: "Wendee Lee",
+    phase: "7",
     childrenIds: [],
     strongType: StrongType.EASY,
     points: 100,
@@ -399,8 +401,8 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_7_6",
     initPosition: vec3({ x: 0.2, y: 0, z: 0.1 }),
-    text: "github.com/wass08",
-    phase: "6",
+    text: "Julie Maddalena",
+    phase: "7",
     childrenIds: [],
     strongType: StrongType.EASY,
     points: 100,
@@ -410,7 +412,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_7_1_0",
     initPosition: vec3({ x: 0.8, y: 0, z: 0.2 }),
-    text: "Mugen87",
+    text: "PlatinumGames Inc.",
     phase: "7_1",
     nextPhase: "8",
     childrenIds: [],
@@ -423,7 +425,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_7_1_1",
     initPosition: vec3({ x: 0.8, y: 0, z: 0.5 }),
-    text: "github.com/Mugen87/nier",
+    text: "Executive Producer",
     phase: "7_1",
     childrenIds: [],
     isNeedChidAllDead: true,
@@ -434,7 +436,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_8_0",
     initPosition: vec3({ x: 0.5, y: 0, z: 0.2 }),
-    text: "React Three Fiber.docs",
+    text: "Atsushi Inaba",
     phase: "8",
     nextPhase: "9",
     childrenIds: ["enemy_8_1", "enemy_8_2"],
@@ -446,7 +448,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_8_1",
     initPosition: vec3({ x: -0.5, y: 0, z: 0.3 }),
-    text: "T-Shirt configurator",
+    text: "Producer",
     phase: "8",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -456,7 +458,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_8_2",
     initPosition: vec3({ x: -0.3, y: 0, z: 0.4 }),
-    text: "Basic demo",
+    text: "Eijiro Nishimura",
     phase: "8",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -466,7 +468,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_9_0",
     initPosition: vec3({ x: 0.6, y: 0, z: 0 }),
-    text: "react-three-rapier",
+    text: "GAME DESIGN",
     phase: "9",
     nextPhase: "10",
     childrenIds: [],
@@ -477,7 +479,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_9_1",
     initPosition: vec3({ x: 0.5, y: 0, z: 0.2 }),
-    text: "pmndrs.github.io/react-three-rapier/",
+    text: "Senior Game Designer",
     phase: "9",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -487,7 +489,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_9_2",
     initPosition: vec3({ x: 0.4, y: 0, z: 0.3 }),
-    text: "react-three-rapier.pmnd.rs",
+    text: "Takahisa Taura",
     phase: "9",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -497,7 +499,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_9_3",
     initPosition: vec3({ x: -0.3, y: 0, z: 0.8 }),
-    text: "Wawa Sensei",
+    text: "Lead Game Designer",
     phase: "9",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -508,7 +510,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_9_4",
     initPosition: vec3({ x: 0.8, y: 0, z: 0.5 }),
-    text: "React Three Fiber Tutorial - Rapier Physics Engine",
+    text: "Isao Negishi",
     phase: "9",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -519,7 +521,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_10_0",
     initPosition: vec3({ x: 1, y: 0, z: 0 }),
-    text: "React Three Drei",
+    text: "Mari Fujita",
     phase: "10",
     nextPhase: "10_1",
     childrenIds: [],
@@ -531,7 +533,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_10_1",
     initPosition: vec3({ x: -1, y: 0, z: 0 }),
-    text: "Used Examples",
+    text: "Shohei Takada",
     phase: "10",
     childrenIds: ["enemy_10_2", "enemy_10_3"],
     isNeedChidAllDead: true,
@@ -543,7 +545,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_10_2",
     initPosition: vec3({ x: 1, y: 0, z: 0.4 }),
-    text: "Gltf Example From Drei",
+    text: "Kazuhide Kawamura",
     phase: "10",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -554,7 +556,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_10_3",
     initPosition: vec3({ x: -1, y: 0, z: 0.2 }),
-    text: "Shapes Examples From Drei",
+    text: "Maho Miyata",
     phase: "10",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -565,7 +567,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_10_1_0",
     initPosition: vec3({ x: 0, y: 0, z: 0 }),
-    text: "You can also try these really fun hacking games",
+    text: "CONCEPT ART",
     phase: "10_1",
     nextPhase: "10_2",
     childrenIds: [],
@@ -576,7 +578,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_10_1_1",
     initPosition: vec3({ x: 0, y: 0, z: 0 }),
-    text: "https://raw.githack.com/Mugen87/nier/master/app/index.html",
+    text: "Environment Concept Artist",
     phase: "10_2",
     nextPhase: "10_3",
     childrenIds: [],
@@ -587,7 +589,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_10_1_2",
     initPosition: vec3({ x: 0, y: 0, z: 0 }),
-    text: "https://onecompileman.com/bug-hunter",
+    text: "Kazuma Koda",
     phase: "10_3",
     nextPhase: "11",
     childrenIds: [],
@@ -598,7 +600,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_11_0",
     initPosition: vec3({ x: 0, y: 0, z: 0 }),
-    text: "AI Helper",
+    text: "Enemy and Environment Concept Artist",
     phase: "11",
     nextPhase: "12",
     childrenIds: [],
@@ -609,7 +611,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_11_1",
     initPosition: vec3({ x: 1, y: 0, z: 0.3 }),
-    text: "I",
+    text: "Yuki Suda",
     phase: "11",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -619,7 +621,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_11_2",
     initPosition: vec3({ x: 0.9, y: 0, z: 0.3 }),
-    text: "used a lot",
+    text: "Cutscene Illustrator",
     phase: "11",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -629,7 +631,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_11_3",
     initPosition: vec3({ x: 0.76, y: 0, z: 0.3 }),
-    text: "of",
+    text: "Tomoko Nishii",
     phase: "11",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -639,7 +641,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_11_4",
     initPosition: vec3({ x: 0.7, y: 0, z: 0.4 }),
-    text: "AI help",
+    text: "Weapon Concept Artist",
     phase: "11",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -649,7 +651,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_11_5",
     initPosition: vec3({ x: 0.5, y: 0, z: 0.3 }),
-    text: "in this project,",
+    text: "Yonghee Cho",
     phase: "11",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -659,7 +661,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_11_6",
     initPosition: vec3({ x: 0.4, y: 0, z: 0.4 }),
-    text: "such as ChatGPT",
+    text: "CHARACTER MODELING",
     phase: "11",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -669,7 +671,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_11_7",
     initPosition: vec3({ x: 0.1, y: 0, z: 0.3 }),
-    text: "and DeepSeek",
+    text: "Lead Character Modeler",
     phase: "11",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -679,7 +681,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_12_0",
     initPosition: vec3({ x: 0.5, y: 0, z: 0 }),
-    text: "ChatGPT",
+    text: "Kazunori Tazaki",
     phase: "12",
     nextPhase: "13",
     childrenIds: ["enemy_12_1", "enemy_12_2"],
@@ -691,7 +693,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_12_1",
     initPosition: vec3({ x: -0.5, y: 0, z: 0.5 }),
-    text: "GPT-4o",
+    text: "Hito Matsudaira",
     phase: "12",
     childrenIds: [],
     strongType: StrongType.MEDIUM,
@@ -701,7 +703,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_12_2",
     initPosition: vec3({ x: 0, y: 0, z: 0.8 }),
-    text: "GPT-4o mini",
+    text: "Yoshikaze Matsushita",
     phase: "12",
     childrenIds: [],
     strongType: StrongType.MEDIUM,
@@ -711,7 +713,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_13_0",
     initPosition: vec3({ x: -0.5, y: 0, z: 0.5 }),
-    text: "GPT-4o",
+    text: "ENVIRONMENT",
     phase: "13",
     nextPhase: "14",
     childrenIds: ["enemy_13_1", "enemy_13_2"],
@@ -722,7 +724,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_13_1",
     initPosition: vec3({ x: 0.5, y: 0, z: 0.2 }),
-    text: "GPT-4o",
+    text: "Lead Environment Artist",
     phase: "13",
     childrenIds: [],
     strongType: StrongType.MEDIUM,
@@ -732,7 +734,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_13_2",
     initPosition: vec3({ x: 0, y: 0, z: 0 }),
-    text: "GPT-4o",
+    text: "Yasuyuki Kaji",
     phase: "13",
     childrenIds: [],
     strongType: StrongType.MEDIUM,
@@ -742,7 +744,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_13_3",
     initPosition: vec3({ x: 0.45, y: 0, z: 0.7 }),
-    text: "GPT-4o",
+    text: "Lighting Artist",
     phase: "13",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -753,7 +755,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_13_4",
     initPosition: vec3({ x: -0.2, y: 0, z: 0.5 }),
-    text: "GPT-4o",
+    text: "Shohei Kameoka",
     phase: "13",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -764,7 +766,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_13_5",
     initPosition: vec3({ x: 0.8, y: 0, z: 0.9 }),
-    text: "GPT-4o",
+    text: "Environment Artists",
     phase: "13",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -775,7 +777,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_13_6",
     initPosition: vec3({ x: -0.9, y: 0, z: 0.2 }),
-    text: "GPT-4o",
+    text: "Junpei Mashiba",
     phase: "13",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -786,7 +788,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_13_7",
     initPosition: vec3({ x: 0.1, y: 0, z: 0.4 }),
-    text: "GPT-4o",
+    text: "Kana Yamamoto",
     phase: "13",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -797,7 +799,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_13_8",
     initPosition: vec3({ x: 0.6, y: 0, z: 0.8 }),
-    text: "GPT-4o",
+    text: "Namie Higa",
     phase: "13",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -808,7 +810,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_13_9",
     initPosition: vec3({ x: -0.5, y: 0, z: 0.1 }),
-    text: "GPT-4o",
+    text: "Naoya Yokoyama",
     phase: "13",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -819,7 +821,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_13_10",
     initPosition: vec3({ x: 0.3, y: 0, z: 0.6 }),
-    text: "GPT-4o",
+    text: "Tatsuya Ohigashi",
     phase: "13",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -830,7 +832,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_13_11",
     initPosition: vec3({ x: -0.7, y: 0, z: 0.3 }),
-    text: "GPT-4o",
+    text: "ANIMATION",
     phase: "13",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -841,7 +843,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_13_12",
     initPosition: vec3({ x: 0.0, y: 0, z: 0.9 }),
-    text: "GPT-4o",
+    text: "Takayuki Muranaka",
     phase: "13",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -852,7 +854,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_14_0",
     initPosition: vec3({ x: -0.5, y: 0, z: 0.5 }),
-    text: "GPT-4o mini",
+    text: "VISUAL EFFECTS",
     phase: "14",
     nextPhase: "15",
     childrenIds: [],
@@ -863,7 +865,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_15_0",
     initPosition: vec3({ x: 0, y: 0, z: 0.2 }),
-    text: "DeepSeek",
+    text: "Shion Nakajima",
     phase: "15",
     nextPhase: "16",
     childrenIds: [],
@@ -874,7 +876,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_16_0",
     initPosition: vec3({ x: 0.8, y: 0, z: 0.2 }),
-    text: "SQUARE ENIX CO., LTD.",
+    text: "PROGRAMMING",
     phase: "16",
     nextPhase: "20",
     childrenIds: [],
@@ -886,7 +888,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_20_0",
     initPosition: vec3({ x: 0, y: 0, z: 0 }),
-    text: "Core Development",
+    text: "Lead Programmer",
     phase: "20",
     nextPhase: "21",
     childrenIds: [],
@@ -898,7 +900,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_20_1",
     initPosition: vec3({ x: 0.5, y: 0, z: 0.5 }),
-    text: "Lead Programmer",
+    text: "Ryo Onishi",
     phase: "20",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -909,7 +911,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_20_2",
     initPosition: vec3({ x: 0.4, y: 0, z: 0.4 }),
-    text: "Lead Designer",
+    text: "Takashi Wagatsuma",
     phase: "20",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -921,7 +923,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_20_3",
     initPosition: vec3({ x: 0.3, y: 0, z: 0.3 }),
-    text: "Technical Director",
+    text: "Shuhei Rokumoto",
     phase: "20",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -933,7 +935,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_20_4",
     initPosition: vec3({ x: 0.2, y: 0, z: 0.2 }),
-    text: "Producer",
+    text: "Takenobu Okabe",
     phase: "20",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -944,7 +946,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_20_5",
     initPosition: vec3({ x: 0.1, y: 0, z: 0.1 }),
-    text: "Developer",
+    text: "Yicheng Xiao",
     phase: "20",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -955,7 +957,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_20_6",
     initPosition: vec3({ x: -0.1, y: 0, z: 0.5 }),
-    text: "kjjkjjzyayufqza",
+    text: "Programmers",
     phase: "20",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -965,7 +967,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_20_7",
     initPosition: vec3({ x: -0.2, y: 0, z: 0.4 }),
-    text: "kjjkjjzyayufqza",
+    text: "Kazunori Inoue",
     phase: "20",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -976,7 +978,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_20_8",
     initPosition: vec3({ x: -0.3, y: 0, z: 0.3 }),
-    text: "kjjkjjzyayufqza",
+    text: "Shuichiro Chiboshi",
     phase: "20",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -987,7 +989,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_20_9",
     initPosition: vec3({ x: -0.4, y: 0, z: 0.2 }),
-    text: "kjjkjjzyayufqza",
+    text: "Shoichi Hirakawa",
     phase: "20",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -998,7 +1000,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_20_10",
     initPosition: vec3({ x: -0.5, y: 0, z: 0.1 }),
-    text: "kjjkjjzyayufqza",
+    text: "Misa Yasui",
     phase: "20",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1009,7 +1011,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_21_0",
     initPosition: vec3({ x: 0, y: 0, z: 0 }),
-    text: "Art",
+    text: "SOUND",
     phase: "21",
     nextPhase: "22",
     childrenIds: [],
@@ -1020,7 +1022,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_21_1",
     initPosition: vec3({ x: 0.5, y: 0, z: 0.5 }),
-    text: "Concept Artist",
+    text: "Lead Sound Designer",
     phase: "21",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1031,7 +1033,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_21_2",
     initPosition: vec3({ x: 0.4, y: 0, z: 0.4 }),
-    text: "3D Modeler",
+    text: "Enemy Sound Design",
     phase: "21",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1043,7 +1045,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_21_3",
     initPosition: vec3({ x: 0.3, y: 0, z: 0.3 }),
-    text: "Texture Artist",
+    text: "Environmental Sound Design",
     phase: "21",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1055,7 +1057,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_21_4",
     initPosition: vec3({ x: 0.2, y: 0, z: 0.2 }),
-    text: "UI/UX Designer",
+    text: "UI Sound Design",
     phase: "21",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1066,7 +1068,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_21_5",
     initPosition: vec3({ x: 0.1, y: 0, z: 0.1 }),
-    text: "Environment Artist",
+    text: "Sound Programmer",
     phase: "21",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1077,7 +1079,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_21_6",
     initPosition: vec3({ x: -0.1, y: 0, z: 0.5 }),
-    text: "NieR: Automata",
+    text: "Masato Shindo",
     phase: "21",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1087,7 +1089,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_21_7",
     initPosition: vec3({ x: -0.2, y: 0, z: 0.4 }),
-    text: "NieR: Automata",
+    text: "Yuji Honda",
     phase: "21",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1098,7 +1100,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_21_8",
     initPosition: vec3({ x: -0.3, y: 0, z: 0.3 }),
-    text: "NieR: Automata",
+    text: "Yasuhiro Naka",
     phase: "21",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1109,7 +1111,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_21_9",
     initPosition: vec3({ x: -0.4, y: 0, z: 0.2 }),
-    text: "NieR: Automata",
+    text: "Masataka Jogo",
     phase: "21",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1120,7 +1122,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_21_10",
     initPosition: vec3({ x: -0.5, y: 0, z: 0.1 }),
-    text: "NieR: Automata",
+    text: "Shuji Kohata",
     phase: "21",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1131,7 +1133,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_22_0",
     initPosition: vec3({ x: 0, y: 0, z: 0 }),
-    text: "Audio",
+    text: "CHARACTER DESIGN",
     phase: "22",
     nextPhase: "23",
     childrenIds: [],
@@ -1142,7 +1144,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_22_1",
     initPosition: vec3({ x: -0.5, y: 0, z: 0.5 }),
-    text: "Mugen87",
+    text: "CyDesignation, Inc.",
     phase: "22",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1152,7 +1154,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_22_2",
     initPosition: vec3({ x: 0.5, y: 0, z: 0.3 }),
-    text: "github.com/Mugen87/nier",
+    text: "Character Designers",
     phase: "22",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1162,7 +1164,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_22_3",
     initPosition: vec3({ x: -0.3, y: 0, z: 0.3 }),
-    text: "Weight of the World - 8 bit",
+    text: "Akihiko Yoshida",
     phase: "22",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1173,7 +1175,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_22_4",
     initPosition: vec3({ x: 0, y: 0, z: 0.4 }),
-    text: "https://www.youtube.com/watch?v=mYxn_5kJANA",
+    text: "Yuya Nagai",
     phase: "22",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1184,7 +1186,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_23_0",
     initPosition: vec3({ x: 0, y: 0, z: 0 }),
-    text: "Particle Effects",
+    text: "MONACA",
     phase: "23",
     nextPhase: "24",
     childrenIds: [
@@ -1209,7 +1211,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_23_1",
     initPosition: vec3({ x: 0.5, y: 0, z: 0.2 }),
-    text: "GPT-4o",
+    text: "Music Director",
     phase: "23",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1219,7 +1221,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_23_2",
     initPosition: vec3({ x: 0.3, y: 0, z: 0.1 }),
-    text: "GPT-4o",
+    text: "Keiichi Okabe",
     phase: "23",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1230,7 +1232,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_23_3",
     initPosition: vec3({ x: 0.45, y: 0, z: 0.7 }),
-    text: "GPT-4o",
+    text: "Composers",
     phase: "23",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1241,7 +1243,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_23_4",
     initPosition: vec3({ x: -0.2, y: 0, z: 0.5 }),
-    text: "GPT-4o",
+    text: "Keigo Hoashi",
     phase: "23",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1252,7 +1254,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_23_5",
     initPosition: vec3({ x: 0.8, y: 0, z: 0.9 }),
-    text: "GPT-4o",
+    text: "Kuniyuki Takahashi",
     phase: "23",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1263,7 +1265,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_23_6",
     initPosition: vec3({ x: -0.9, y: 0, z: 0.2 }),
-    text: "GPT-4o",
+    text: "Arranger",
     phase: "23",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1274,7 +1276,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_23_7",
     initPosition: vec3({ x: 0.1, y: 0, z: 0.4 }),
-    text: "GPT-4o",
+    text: "Syotaro Seo",
     phase: "23",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1285,7 +1287,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_23_8",
     initPosition: vec3({ x: 0.6, y: 0, z: 0.8 }),
-    text: "GPT-4o",
+    text: "Songs",
     phase: "23",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1294,9 +1296,9 @@ export const EnemyData: EnemyProps[] = [
     spawnDelay: 6,
   },
   {
-    id: "enemy_123_9",
+    id: "enemy_23_9",
     initPosition: vec3({ x: -0.5, y: 0, z: 0.1 }),
-    text: "GPT-4o",
+    text: "Emi Evans",
     phase: "23",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1307,7 +1309,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_23_10",
     initPosition: vec3({ x: 0.3, y: 0, z: 0.6 }),
-    text: "GPT-4o",
+    text: "J'Nique Nicole",
     phase: "23",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1318,7 +1320,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_23_11",
     initPosition: vec3({ x: -0.7, y: 0, z: 0.3 }),
-    text: "GPT-4o",
+    text: "Nami Nakagawa",
     phase: "23",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1329,7 +1331,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_23_12",
     initPosition: vec3({ x: 0.0, y: 0, z: 0.9 }),
-    text: "GPT-4o",
+    text: "Marina Kawano",
     phase: "23",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1352,7 +1354,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_30_0",
     initPosition: vec3({ x: 0, y: 0, z: 0 }),
-    text: "Package.json",
+    text: "Business Division VI",
     phase: "30",
     nextPhase: "31",
     childrenIds: [],
@@ -1363,7 +1365,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_31_0",
     initPosition: vec3({ x: 1, y: 0, z: 0 }),
-    text: "dependencies",
+    text: "Executive Producer",
     phase: "31",
     nextPhase: "32",
     childrenIds: [],
@@ -1374,7 +1376,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_31_1",
     initPosition: vec3({ x: 0.5, y: 0, z: 0.5 }),
-    text: "@react-spring/parallax",
+    text: "Yuu Miyake",
     phase: "31",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1385,7 +1387,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_31_2",
     initPosition: vec3({ x: -0.5, y: 0, z: 0.5 }),
-    text: "@react-spring/web",
+    text: "Co-Producer",
     phase: "31",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1396,7 +1398,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_31_3",
     initPosition: vec3({ x: -0.2, y: 0, z: 0.2 }),
-    text: "@react-three/drei",
+    text: "Junichi Ehara",
     phase: "31",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1407,7 +1409,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_32_0",
     initPosition: vec3({ x: -1, y: 0, z: 0 }),
-    text: "@react-three/fiber",
+    text: "Assistant Producer",
     phase: "32",
     nextPhase: "33",
     childrenIds: [],
@@ -1418,7 +1420,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_32_1",
     initPosition: vec3({ x: 0.9, y: 0, z: 1 }),
-    text: "@react-three/postprocessing",
+    text: "Takahiro Iino",
     phase: "32",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1429,7 +1431,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_32_2",
     initPosition: vec3({ x: -0.9, y: 0, z: 1 }),
-    text: "@react-three/rapier",
+    text: "CHARACTER DESIGN",
     phase: "32",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1440,7 +1442,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_32_3",
     initPosition: vec3({ x: 0.5, y: 0, z: 0.5 }),
-    text: "@types/node",
+    text: "Toshiyuki Itahana",
     phase: "32",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1451,7 +1453,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_33_0",
     initPosition: vec3({ x: 0.5, y: 0, z: 0.5 }),
-    text: "@types/pubsub-js",
+    text: "MARKETING DIVISION",
     phase: "33",
     nextPhase: "34",
     childrenIds: [],
@@ -1462,8 +1464,8 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_33_1",
     initPosition: vec3({ x: -0.5, y: 0, z: 0 }),
-    text: "@types/react",
-    phase: "32",
+    text: "PR Manager",
+    phase: "33",
     childrenIds: [],
     strongType: StrongType.EASY,
     points: 300,
@@ -1473,8 +1475,8 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_33_2",
     initPosition: vec3({ x: 0.5, y: 0, z: 0.2 }),
-    text: "@types/react-dom",
-    phase: "32",
+    text: "Ryutaro Sasaki",
+    phase: "33",
     childrenIds: [],
     strongType: StrongType.EASY,
     points: 300,
@@ -1484,8 +1486,8 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_33_3",
     initPosition: vec3({ x: 0.2, y: 0, z: 1 }),
-    text: "@types/three",
-    phase: "32",
+    text: "Tomoaki Takano",
+    phase: "33",
     childrenIds: [],
     strongType: StrongType.EASY,
     points: 300,
@@ -1495,7 +1497,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_34_0",
     initPosition: vec3({ x: -0.2, y: 0, z: 0.5 }),
-    text: "autoprefixer",
+    text: "ONLINE BUSINESS DEVELOPMENT",
     phase: "34",
     nextPhase: "35",
     childrenIds: [],
@@ -1506,7 +1508,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_34_1",
     initPosition: vec3({ x: 0.4, y: 0, z: 0.2 }),
-    text: "leva",
+    text: "Senior Manager",
     phase: "34",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1517,7 +1519,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_34_2",
     initPosition: vec3({ x: 0.3, y: 0, z: 0.1 }),
-    text: "next",
+    text: "Kenji Ishiwata",
     phase: "34",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1528,7 +1530,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_34_3",
     initPosition: vec3({ x: 0.2, y: 0, z: 0 }),
-    text: "postcss",
+    text: "Sales Staff",
     phase: "34",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1539,7 +1541,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_34_4",
     initPosition: vec3({ x: -0.2, y: 0, z: 0 }),
-    text: "pubsub-js",
+    text: "Yoshiki Yamada",
     phase: "34",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1550,7 +1552,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_35_0",
     initPosition: vec3({ x: 1, y: 0, z: 0.5 }),
-    text: "react",
+    text: "SOUND",
     phase: "35",
     nextPhase: "36",
     childrenIds: [],
@@ -1561,7 +1563,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_35_1",
     initPosition: vec3({ x: 0.2, y: 0, z: 0.5 }),
-    text: "react-dom",
+    text: "Sound Director",
     phase: "35",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1572,7 +1574,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_35_2",
     initPosition: vec3({ x: -0.2, y: 0, z: 0.2 }),
-    text: "react-use",
+    text: "Tomohiro Yajima",
     phase: "35",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1583,7 +1585,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_35_3",
     initPosition: vec3({ x: 0.5, y: 0, z: 0.2 }),
-    text: "tailwindcss",
+    text: "Kazuhiro Hosoe",
     phase: "35",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1594,7 +1596,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_36_0",
     initPosition: vec3({ x: -1, y: 0, z: 0 }),
-    text: "three",
+    text: "QUALITY ASSURANCE",
     phase: "36",
     nextPhase: "37",
     childrenIds: [],
@@ -1605,7 +1607,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_36_1",
     initPosition: vec3({ x: -0.5, y: 0, z: 0.2 }),
-    text: "typewriter-effect",
+    text: "Kengo Murata",
     phase: "36",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1616,7 +1618,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_36_2",
     initPosition: vec3({ x: -0.3, y: 0, z: 0.5 }),
-    text: "uuid",
+    text: "Satoru Matsuo",
     phase: "36",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1627,7 +1629,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_36_3",
     initPosition: vec3({ x: 0.3, y: 0, z: 0.1 }),
-    text: "zustand",
+    text: "Toyokazu Takehara",
     phase: "36",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1638,7 +1640,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_37_0",
     initPosition: vec3({ x: 0, y: 0, z: 0 }),
-    text: "ORIGINAL DESIGN",
+    text: "SQUARE ENIX, INC.",
     phase: "37",
     nextPhase: "38",
     childrenIds: [],
@@ -1649,7 +1651,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_38_0",
     initPosition: vec3({ x: 0.8, y: 0, z: 0 }),
-    text: "SQUARE ENIX CO., LTD.",
+    text: "Weight of the World",
     phase: "38",
     nextPhase: "40",
     childrenIds: [
@@ -1669,7 +1671,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_38_1",
     initPosition: vec3({ x: -0.6, y: 0, z: 0.54 }),
-    text: "PlatinumGames Inc.",
+    text: "Song",
     phase: "38",
     childrenIds: [],
     isImportantPhase: true,
@@ -1681,8 +1683,8 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_38_2",
     initPosition: vec3({ x: 0.6, y: 0, z: 0.34 }),
-    text: "And many many companies",
-    phase: "39",
+    text: "Ayane Naka",
+    phase: "38",
     childrenIds: [],
     isImportantPhase: true,
     strongType: StrongType.EASY,
@@ -1693,8 +1695,8 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_38_3",
     initPosition: vec3({ x: 0.2, y: 0, z: 0.7 }),
-    text: "And many many companies",
-    phase: "39",
+    text: "Chisayo Harada",
+    phase: "38",
     childrenIds: [],
     isImportantPhase: true,
     strongType: StrongType.EASY,
@@ -1705,8 +1707,8 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_38_4",
     initPosition: vec3({ x: -0.2, y: 0, z: 0.5 }),
-    text: "And many many companies",
-    phase: "39",
+    text: "Hidekazu Tanaka",
+    phase: "38",
     childrenIds: [],
     isImportantPhase: true,
     strongType: StrongType.EASY,
@@ -1717,8 +1719,8 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_38_5",
     initPosition: vec3({ x: 0.1, y: 0, z: 0.6 }),
-    text: "And many many companies",
-    phase: "39",
+    text: "Hito Matsudaira",
+    phase: "38",
     childrenIds: [],
     isImportantPhase: true,
     strongType: StrongType.EASY,
@@ -1729,8 +1731,8 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_38_6",
     initPosition: vec3({ x: 0, y: 0, z: 0.2 }),
-    text: "And many many companies",
-    phase: "39",
+    text: "Isao Negishi",
+    phase: "38",
     childrenIds: [],
     isImportantPhase: true,
     strongType: StrongType.EASY,
@@ -1741,7 +1743,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_40_0",
     initPosition: vec3({ x: 0, y: 0, z: 0 }),
-    text: "Special Thanks",
+    text: "SPECIAL THANKS",
     phase: "40",
     nextPhase: "41",
     isImportantPhase: true,
@@ -1754,7 +1756,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_41_0",
     initPosition: vec3({ x: 1, y: 0, z: 0.5 }),
-    text: "Wawa Sensei",
+    text: "Norifumi Wasada",
     phase: "41",
     nextPhase: "43",
     childrenIds: ["enemy_41_1"],
@@ -1767,7 +1769,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_41_1",
     initPosition: vec3({ x: -1, y: 0, z: 0 }),
-    text: "Mugen87",
+    text: "Masahiro Okamoto",
     phase: "41",
     childrenIds: [],
     strongType: StrongType.EXTREME,
@@ -1778,7 +1780,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_43_0",
     initPosition: vec3({ x: -1, y: 0, z: 0 }),
-    text: "Stack Overflow",
+    text: "Hirotsugu Yasui",
     phase: "43",
     nextPhase: "44",
     childrenIds: ["enemy_43_1"],
@@ -1791,7 +1793,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_43_1",
     initPosition: vec3({ x: 1, y: 0, z: 0.4 }),
-    text: "Github Issues",
+    text: "Jun Eishima",
     phase: "43",
     childrenIds: [],
     strongType: StrongType.EXTREME,
@@ -1802,7 +1804,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_44_0",
     initPosition: vec3({ x: 0.5, y: 0, z: 0 }),
-    text: "YOKO TARO",
+    text: "Producer",
     phase: "44",
     nextPhase: "45",
     childrenIds: [],
@@ -1814,7 +1816,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_45_0",
     initPosition: vec3({ x: 0, y: 0, z: 0 }),
-    text: "And many, many people",
+    text: "Yosuke Saito",
     phase: "45",
     nextPhase: "46",
     childrenIds: [],
@@ -1826,7 +1828,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_46_0",
     initPosition: vec3({ x: 0, y: 0, z: 0 }),
-    text: "And You!",
+    text: "President & CEO",
     phase: "46",
     nextPhase: "final",
     childrenIds: [],
@@ -1837,7 +1839,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_final",
     initPosition: vec3({ x: 0, y: 0, z: 0 }),
-    text: "Thank you for playing!",
+    text: "Yosuke Matsuda",
     phase: "final",
     nextPhase: "end",
     childrenIds: [],

@@ -1,0 +1,129 @@
+import { useEffect, useRef, useState } from 'react'
+import { useTranslations } from 'next-intl'
+import { GamepadState, menuGamepad } from '../../modules/GamepadManager'
+import useAudioStore from '../../store/AudioStore'
+import styles from './ContinueOverlay.module.css'
+
+interface DialogueProps {
+  line: string
+  duration: number
+  notice: boolean
+  labels?: readonly [string, string]
+  firstIsYes: boolean
+  onConfirm: (index: number) => void
+  onChangeDisplay?: () => void
+}
+
+function padKeys({ buttons, axes }: GamepadState) {
+  return {
+    up: buttons['D-Pad Up'] || axes['Left Stick Vertical'] < -0.65,
+    down: buttons['D-Pad Down'] || axes['Left Stick Vertical'] > 0.65,
+    confirm: buttons.A || buttons.Cross || buttons.Circle,
+    display: buttons.Y || buttons.Triangle,
+  }
+}
+
+export default function DeathDialogue({ line, duration, notice, firstIsYes, labels: customLabels, onConfirm, onChangeDisplay }: DialogueProps) {
+  const t = useTranslations()
+  const [length, setLength] = useState(0)
+  const [ready, setReady] = useState(false)
+  const [selected, setSelected] = useState<number | null>(null)
+  const [confirming, setConfirming] = useState(false)
+  const root = useRef<HTMLDivElement>(null)
+  const confirmed = useRef(false)
+  const timer = useRef<number | undefined>(undefined)
+  const letters = Array.from(line)
+  const labels = customLabels ?? (firstIsYes ? [t('yes'), t('no')] : [t('no'), t('yes')])
+
+  useEffect(() => {
+    root.current?.focus({ preventScroll: true })
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const start = performance.now()
+    let frame: number
+    function reveal(now: number) {
+      const elapsed = now - start
+      setLength(reduced ? letters.length : Math.min(letters.length, Math.ceil(elapsed / duration * letters.length)))
+      if (reduced || elapsed >= duration + 70) setReady(true)
+      else frame = requestAnimationFrame(reveal)
+    }
+    frame = requestAnimationFrame(reveal)
+    return () => {
+      cancelAnimationFrame(frame)
+      window.clearTimeout(timer.current)
+    }
+  }, [line, letters.length, duration])
+
+  function confirm(index: number) {
+    if (!ready || confirmed.current) return
+    confirmed.current = true
+    setSelected(index)
+    setConfirming(true)
+    useAudioStore.getState().play('buttonClick')
+    timer.current = window.setTimeout(() => onConfirm(index), notice ? 50 : 300)
+  }
+
+  useEffect(() => {
+    function move(direction: number) {
+      if (!ready || notice || confirmed.current) return
+      root.current?.focus({ preventScroll: true })
+      setSelected(index => index === null ? (direction < 0 ? 0 : 1) : 1 - index)
+    }
+    function keydown(event: KeyboardEvent) {
+      if (event.altKey || event.ctrlKey || event.metaKey) return
+      const { code } = event
+      if (code === 'KeyY' && onChangeDisplay && !event.repeat) {
+        event.preventDefault()
+        onChangeDisplay()
+      } else if (['ArrowUp', 'ArrowDown', 'KeyW', 'KeyS'].includes(code)) {
+        event.preventDefault()
+        if (!event.repeat) move(code === 'ArrowUp' || code === 'KeyW' ? -1 : 1)
+      } else if (code === 'Enter' || code === 'NumpadEnter' || code === 'Space') {
+        if (event.target instanceof Element && event.target.closest('[aria-keyshortcuts="Y"]')) return
+        event.preventDefault()
+        if (!event.repeat) confirm(selected ?? 0)
+      }
+    }
+    let previous = padKeys(menuGamepad.getState())
+    function gamepad(state: GamepadState) {
+      const next = padKeys(state)
+      if (next.up && !previous.up) move(-1)
+      if (next.down && !previous.down) move(1)
+      if (next.display && !previous.display) onChangeDisplay?.()
+      if (next.confirm && !previous.confirm) confirm(selected ?? 0)
+      previous = next
+    }
+    window.addEventListener('keydown', keydown)
+    menuGamepad.on('update', gamepad)
+    return () => {
+      window.removeEventListener('keydown', keydown)
+      menuGamepad.off('update', gamepad)
+    }
+  }, [ready, notice, selected, onConfirm, onChangeDisplay])
+
+  const text = <span className={styles.line} aria-hidden="true">{letters.slice(0, length).join('')}</span>
+  return (
+    <div className={styles.dialogue} ref={root} tabIndex={-1} data-confirming={confirming}>
+      <div className={styles.band}>
+        <div className={styles.ornament} />
+        {notice ? (
+          <button type="button" className={styles.advance} aria-label={line + ' ' + t('advanceDialogue')}
+            disabled={!ready} onClick={() => confirm(0)}>{text}</button>
+        ) : text}
+      </div>
+      {!notice && ready && <div className={styles.choices}>
+        {labels.map((label, index) => (
+          <button type="button" key={label} className={styles.choice}
+            data-selected={selected === index}
+            aria-disabled={confirming} onFocus={() => !confirmed.current && setSelected(index)}
+            onPointerMove={() => !confirmed.current && setSelected(index)} onClick={() => confirm(index)}>
+            <svg className={styles.cursor} aria-hidden="true" viewBox="0 0 18 14" fill="none">
+              <path d="M1 7Q6 1.3 13.3 7Q6 12.7 1 7ZM4 7Q7 4.4 10 7Q7 9.6 4 7Z" stroke="currentColor" strokeWidth=".85" />
+              <path d="m7 5.6 2 1.4L7 8.4 5.3 7zM14 1h3v3h-3zm0 9.3h3v3h-3z" fill="currentColor" />
+            </svg>
+            <span className={styles.square} aria-hidden="true" />{label}
+          </button>
+        ))}
+      </div>}
+    </div>
+  )
+}

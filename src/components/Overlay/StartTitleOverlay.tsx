@@ -2,7 +2,7 @@ import { useSpring, animated } from '@react-spring/web'
 import React, { } from 'react'
 import systemInfoStore from '../../store/SystemInfoStore';
 import usePlayerStore from '../../store/PlayerStore';
-import useAudioStore from '../../store/AudioStore';
+import { startCreditsMusic } from '../../store/CreditsMusic';
 import { useOverlayStore } from '../../store/OverlayStore';
 
 export default function StartTitleOverlay() {
@@ -11,7 +11,7 @@ export default function StartTitleOverlay() {
     const setCurrentPhase = systemInfoStore(state => state.setCurrentPhase)
     const respawnPlayer = usePlayerStore(state => state.respawnPlayer)
     const setShowOverlay = useOverlayStore(state => state.setShowOverlay)
-    const { stop: stopAudio, play: playAudio } = useAudioStore();
+    React.useEffect(() => { startCreditsMusic() }, []);
     
     // Check if we should skip title animation in development mode
     const shouldSkipTitleAnimation = process.env.NODE_ENV === 'development' && process.env.SKIP_TITLE_ANIMATION === 'true';
@@ -26,7 +26,6 @@ export default function StartTitleOverlay() {
             }
             
             if (process.env.NODE_ENV != 'development') {
-                playAudio('Weight of the World')
                 await new Promise((resolve) => setTimeout(resolve, 2000));
                 // 1. First let title and subtitle appear gradually
                 await next({ titleOpacity: 1 });

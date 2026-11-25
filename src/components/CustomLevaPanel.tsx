@@ -5,6 +5,7 @@ import { Schema } from 'leva/dist/declarations/src/types/public';
 import usePlayerStore from '../store/PlayerStore';
 import systemInfoStore from '../store/SystemInfoStore';
 import useAudioStore from '../store/AudioStore';
+import { stopCreditsMusic } from '../store/CreditsMusic';
 import { EmptyEnemyData, EnemyData } from '../data/EnemyData';
 import { filePicker } from "leva-file-picker";
 import { useNotificationStore } from '../store/NotificationStore';
@@ -29,7 +30,7 @@ export default function CustomLevaPanel() {
             removeSoundByType("music");
             return;
         }
-        stopAudio('Weight of the World')
+        stopCreditsMusic()
         if (sounds[file.name]) {
             stopAudio(file.name);
             removeSoundByType("music");

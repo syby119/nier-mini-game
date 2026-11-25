@@ -16,7 +16,6 @@ export const useCutsceneStore = create<CutsceneStore>()(
   subscribeWithSelector((set, get) => {
     // 获取 overlayStore 的方法
     const setShowOverlay = useOverlayStore.getState().setShowOverlay;
-    const resetSystemInfo = systemInfoStore.getState().resetSystemInfo;
     const setStartDestroyOnlineResultAnimation =
       systemInfoStore.getState().setStartDestroyOnlineResultAnimation;
     const setStartDestroyPlayerSummaryAnimation =
@@ -46,19 +45,6 @@ export const useCutsceneStore = create<CutsceneStore>()(
       },
       actionMap: {
         showTitleScreen: () => setShowOverlay("mainTitleOverlay", true),
-        showContinueOverlay: () => setShowOverlay("continueOverlay", true),
-        showRequestOtherPlayerHelpOverlay: () =>
-          setShowOverlay("requestHelpOverlay", true),
-        showContinueOverlayAndClearSceneObjects: () => {
-          setShowOverlay("continueOverlay", true);
-          resetSystemInfo();
-        },
-        resetEnemiesDataByPhase: () => {
-          PubSub.publish("resetEnemiesData", {
-            type: "resetPhase",
-            phase: systemInfoStore.getState().importantPhaseRecord,
-          });
-        },
         showFinalConfirmTextOverlay: () =>
           setShowOverlay("finalConfirmTextOverlay", true),
         startDestroyOnlineResultOverlay: () => {

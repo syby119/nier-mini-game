@@ -12,7 +12,6 @@ import { ProjectileSystem } from './ProjectileSystem';
 import CameraEffectsSystem from './CameraEffectsSystem';
 import CustomLevaPanel from './CustomLevaPanel';
 import { button, Leva, useControls } from 'leva';
-import SceneBackgroundText from './SceneBackgroundText';
 import PlayTimerCounter from './PlayTimerCounter';
 import { EnemySystem } from './EnemySystem';
 import { Schema } from 'leva/dist/declarations/src/types/public';
@@ -105,7 +104,6 @@ export default function CanvasContainer() {
         <CameraEffectsSystem />
         <PlayTimerCounter />
         {pDebug.freeCamera && <OrbitControls />}
-        <SceneBackgroundText />
         <SceneEffects />
         {/* {postEffects && <PostEffectComposer />} */}
         {postEffects && <ThreeEffects />}

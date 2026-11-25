@@ -21,7 +21,7 @@ export const EnemySystem = React.memo(() => {
     const pendingEnemies = useRef<Set<string>>(new Set());
     const pointsRef = useRef<number>(0);
     const timersRef = useRef<Set<NodeJS.Timeout>>(new Set());
-    const checkEnemyList = useRef<Set<string>>(new Set());
+    const defeatedEnemyIds = useRef<Set<string>>(new Set());
     const { play: playAudio } = useAudioStore();
 
     const batchAddEnemies = (enemies: EnemyProps[]) => {
@@ -72,7 +72,8 @@ export const EnemySystem = React.memo(() => {
                     handleUpdateEnemiesByPhase(resetType?.phase || currentPhase);
                 }, 200)
             }
-            checkEnemyList.current.clear();
+            defeatedEnemyIds.current.clear();
+            pendingEnemies.current.clear();
         })
 
         const setFinalConfirmEnemiesDataToken = PubSub.subscribe("setFinalConfirmEnemiesData", (msg: any, data: EnemyProps) => {
@@ -82,7 +83,8 @@ export const EnemySystem = React.memo(() => {
             const newMap = new Map();
             newMap.set(FinalConfirmEnemy.id, FinalConfirmEnemy);
             setEnemiesMap(newMap);
-            checkEnemyList.current.clear();
+            defeatedEnemyIds.current.clear();
+            pendingEnemies.current.clear();
         })
 
         return () => {
@@ -128,15 +130,15 @@ export const EnemySystem = React.memo(() => {
 
     const enemyOnDeath = (
         id: string,
-        phase?: string,
+        _phase?: string,
         nextPhase?: string,
-        isImportantPhase?: boolean,
+        _isImportantPhase?: boolean,
         isNeedChidAllDead?: boolean,
         childrenIds?: string[],
         points: number = 0
     ) => {
         //避免同个敌人多次死亡
-        if (checkEnemyList.current.has(id)) {
+        if (defeatedEnemyIds.current.has(id)) {
             setEnemiesMap(prev => {
                 const newMap = new Map(prev);
                 newMap.delete(id)
@@ -145,7 +147,7 @@ export const EnemySystem = React.memo(() => {
             return
         }
         pointsRef.current += points;
-        checkEnemyList.current.add(id);
+        defeatedEnemyIds.current.add(id);
         playAudio('coreExplode1');
         if (id == "enemy_final") {
             handleFinalEnemyOnDeath()
@@ -154,9 +156,7 @@ export const EnemySystem = React.memo(() => {
         }
         checkPendingEnemies({
             id,
-            phase,
             nextPhase,
-            isImportantPhase,
             isNeedChidAllDead,
             childrenIds
         });
@@ -169,41 +169,27 @@ export const EnemySystem = React.memo(() => {
 
     const checkPendingEnemies = (deadEnemy: {
         id: string,
-        phase?: string,
         nextPhase?: string,
-        isImportantPhase?: boolean,
         isNeedChidAllDead?: boolean,
         childrenIds?: string[]
     }) => {
-        //先检查pendingEnemies中是否有敌人，有就先处理
-        if (pendingEnemies.current.size > 0) {
-            pendingEnemies.current.forEach(id => {
-                const enemy = EnemyData.find(e => e.id === id);
-                if (enemy) {
-                    //同时检查enemiesMap和id不是当前的，因为当前的还处于enemiesMap中
-                    const childrenAlive = enemy.childrenIds?.some(id => enemiesMap.has(id) && id !== deadEnemy.id);
-                    if (!childrenAlive && enemy.nextPhase) {
-                        setCurrentPhase(enemy.nextPhase);
-                        pendingEnemies.current.delete(id);
-                    }
-                }
-            });
-        }
+        // Several enemies can be defeated before React renders the updated map.
+        const allChildrenDefeated = (ids: string[] = []) =>
+            ids.every(childId => defeatedEnemyIds.current.has(childId));
 
-        if (!deadEnemy?.isNeedChidAllDead) {
-            if (deadEnemy.nextPhase) {
-                setCurrentPhase(deadEnemy.nextPhase);
+        pendingEnemies.current.forEach(id => {
+            const enemy = EnemyData.find(e => e.id === id);
+            if (enemy?.nextPhase && allChildrenDefeated(enemy.childrenIds)) {
+                pendingEnemies.current.delete(id);
+                setCurrentPhase(enemy.nextPhase);
             }
-            return;
-        };
+        });
 
-        //如果是isNeedChidAllDead，检查所有子敌人是否都死了
-        const childrenAlive = deadEnemy.childrenIds?.some(id => enemiesMap.has(id));
-        if (!childrenAlive && deadEnemy.nextPhase) {
-            setCurrentPhase(deadEnemy.nextPhase);
-        } else {
-            // 如果有子敌人还活着，将父敌人加入待处理列表
+        if (!deadEnemy.nextPhase) return;
+        if (deadEnemy.isNeedChidAllDead && !allChildrenDefeated(deadEnemy.childrenIds)) {
             pendingEnemies.current.add(deadEnemy.id);
+        } else {
+            setCurrentPhase(deadEnemy.nextPhase);
         }
     }
 

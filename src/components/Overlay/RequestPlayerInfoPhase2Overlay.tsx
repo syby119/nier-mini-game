@@ -1,3 +1,5 @@
+import { keepEndingSave } from '../../lib/endingSave'
+import usePlayerStore from '../../store/PlayerStore'
 import { useContext, useState } from "react"
 import { INieRButtonsConfigs, NieRCustomBox } from "./NieRCustomBox"
 import systemInfoStore from "../../store/SystemInfoStore";
@@ -6,6 +8,7 @@ import { useOverlayStore } from "../../store/OverlayStore";
 
 export default function RequestPlayerInfoPhase2Overlay() {
     const setShowOverlay = useOverlayStore((state) => state.setShowOverlay)
+    const [saveError, setSaveError] = useState(false)
     const [startCloseAnimation, setStartCloseAnimation] = useState(false)
     const [buttonDisabled, setButtonDisabled] = useState(false)
     const [formValue, setFormValue] = useState({
@@ -17,6 +20,7 @@ export default function RequestPlayerInfoPhase2Overlay() {
     const handleSaveShareInfo = async () => {
         try {
             setButtonDisabled(true)
+            setSaveError(false)
             const req = await fetch('/api/createShareInfo', {
                 method: 'POST',
                 headers: {
@@ -27,6 +31,9 @@ export default function RequestPlayerInfoPhase2Overlay() {
                     region: formValue.region
                 })
             })
+            if (!req.ok) throw new Error(String(req.status))
+            usePlayerStore.getState().setPlayerShareInfo(formValue)
+            keepEndingSave(usePlayerStore.getState().playerShareInfo)
             setStartCloseAnimation(true)
             setTimeout(() => {
                 setShowOverlay('requestPlayerInfoPhase2Overlay', false)
@@ -34,7 +41,7 @@ export default function RequestPlayerInfoPhase2Overlay() {
             }, 1500)
         } catch (e) {
             setButtonDisabled(false)
-            console.log(e)
+            setSaveError(true)
         }
     }
 
@@ -65,6 +72,7 @@ export default function RequestPlayerInfoPhase2Overlay() {
             </div>
             <div className='p-4 flex flex-col gap-4 min-h-40 max-h-80 overflow-y-scroll custom-scrollbar'>
                 <form>
+                    {saveError && <p role="alert">{t('finale.saveError')}</p>}
                     <div className="mb-4">
                         <label className="block text-gray-700 text-sm font-bold mb-2">
                             {t('message')}

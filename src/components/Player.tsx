@@ -15,7 +15,7 @@ import { PlayerMoveEffects } from './PlayerMoveEffects';
 import { useTranslations } from 'next-intl';
 import { useFixedFrameUpdate } from '../hook/useFixedFrameUpdate';
 import { useNotificationStore } from '../store/NotificationStore';
-import { useCutsceneStore } from '../store/CutsceneStore';
+import { useOverlayStore } from '../store/OverlayStore';
 import { useNetworkStore } from '../store/NetworkStore';
 import { useControls } from 'leva';
 import { Schema } from 'leva/plugin';
@@ -47,7 +47,7 @@ const gamepadManager = new GamepadManager(0.3);
 export const Player = () => {
     // console.log('Player')
     const addNotification = useNotificationStore(state => state.addNotification);
-    const startCutscene = useCutsceneStore(state => state.startCutscene);
+    const setShowOverlay = useOverlayStore(state => state.setShowOverlay);
     const currentPhase = systemInfoStore(state => state.systemInfo.currentPhase);
     const notEnablePlayerNameList = useNetworkStore(state => state.notEnablePlayerNameList);
     const { scene } = useThree();
@@ -393,6 +393,7 @@ export const Player = () => {
     }
 
     const onHit = ((target: CollisionTarget, other: CollisionTarget) => {
+        if (usePlayerStore.getState().playerInfo.playerHealth <= 0) return
         //如果玩家在无敌时间内，不受伤
         if (other.rigidBodyObject?.userData.type === 'enemy_normal_projectile' ||
             other.rigidBodyObject?.userData.type === 'enemy_unbroken_projectile'
@@ -445,7 +446,7 @@ export const Player = () => {
                         disableMove.current = true
                         rb.current?.setEnabled(false)
                         setPlayerToDeath()
-                        startCutscene('showContinueOverlayAndClearSceneObjects')
+                        setShowOverlay('continueOverlay', true)
                         return
                     }
                     PubSub.publish('startOnHitCameraEffect', {})

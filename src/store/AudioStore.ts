@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { Howl } from 'howler';
+import { setCreditsVolume } from './CreditsMusic';
 
 type AudioStore = {
     initVolume: number; // 初始音量
@@ -95,6 +96,8 @@ const useAudioStore = create<AudioStore>((set, get) => ({
 
     // 设置所有音效音量
     setAllVolume: (volume: number) => {
+        set({ initVolume: volume });
+        setCreditsVolume(volume);
         Object.values(get().sounds).forEach((soundPool) => {
             soundPool.pool.forEach((sound) => sound.volume(volume));
         });

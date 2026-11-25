@@ -27,8 +27,6 @@ interface SystemInfoContextType {
   updateSystemInfo: (updates: Partial<ISystemInfo>) => void;
   importantPhaseRecord: string;
   setImportantPhaseRecord: (phase: string) => void;
-  reSetBackgroundDisplayTexts: () => void;
-  clearBackgroundDisplayTexts: () => void;
   isFinaleConfirmed: boolean;
   setFinaleConfirmed: (value: boolean) => void;
   startDestroyOnlineResultAnimation: boolean;
@@ -74,12 +72,6 @@ const systemInfoStore = create<SystemInfoContextType>()(
       })),
     importantPhaseRecord: "",
     setImportantPhaseRecord: (phase) => set({ importantPhaseRecord: phase }),
-    reSetBackgroundDisplayTexts: () => {
-      PubSub.publish("reSetBackgroundDisplayTexts");
-    },
-    clearBackgroundDisplayTexts: () => {
-      PubSub.publish("clearBackgroundDisplayTexts");
-    },
     isFinaleConfirmed: false,
     setFinaleConfirmed: (value) =>
       set((state) => ({

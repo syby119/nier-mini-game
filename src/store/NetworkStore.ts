@@ -1,40 +1,60 @@
-import { create } from "zustand";
-import { subscribeWithSelector } from "zustand/middleware";
+import { create } from 'zustand'
+import { subscribeWithSelector } from 'zustand/middleware'
+
+export interface SupportMessage {
+  name: string
+  content: string
+  region?: string
+}
+
+interface OnlineResult { name: string; score: number }
 
 interface NetworkStore {
-  onlineData: any[];
-  isConnectedToNetwork: boolean;
-  notEnablePlayerNameList: string[];
-  fetchOnlineData: () => Promise<void>;
+  onlineData: OnlineResult[]
+  isConnectedToNetwork: boolean
+  notEnablePlayerNameList: string[]
+  supportMessages: SupportMessage[]
+  fetchOnlineData: () => Promise<void>
+}
+
+async function readList<T>(url: string): Promise<T[]> {
+  const response = await fetch(url)
+  if (!response.ok) throw new Error('Failed to load ' + url)
+  const { data } = await response.json()
+  if (!Array.isArray(data)) throw new Error('Expected a list from ' + url)
+  return data
 }
 
 export const useNetworkStore = create<NetworkStore>()(
-  subscribeWithSelector((set) => ({
-    onlineData: [],
-    isConnectedToNetwork: false,
-    notEnablePlayerNameList: [],
-    fetchOnlineData: async () => {
-      try {
-        const data = await fetch("/api/getOnlineResult").then((res) =>
-          res.json()
-        );
-        const notEnablePlayerNameList = await fetch(
-          "/api/getNotEnablePlayerNameList"
-        )
-          .then((res) => res.json())
-          .then((json) =>
-            json.data
-              .map((item: { name: string }) => item.name)
-              .sort(() => Math.random() - 0.5)
-          );
-        set({
-          onlineData: data,
-          isConnectedToNetwork: true,
-          notEnablePlayerNameList,
-        });
-      } catch (e) {
-        console.error(e);
-      }
-    },
-  }))
-);
+  subscribeWithSelector((set) => {
+    let loading = false
+    return {
+      onlineData: [],
+      isConnectedToNetwork: false,
+      notEnablePlayerNameList: [],
+      supportMessages: [],
+      fetchOnlineData: async () => {
+        if (loading) return
+        loading = true
+        try {
+          const [scores, helpers, messages] = await Promise.allSettled([
+            readList<OnlineResult>('/api/getOnlineResult'),
+            readList<{ name: string }>('/api/getNotEnablePlayerNameList'),
+            readList<SupportMessage>('/api/getContent'),
+          ])
+          if (scores.status === 'fulfilled') set({ onlineData: scores.value })
+          if (helpers.status === 'fulfilled') {
+            const names = helpers.value.map(row => row.name).filter(name => typeof name === 'string' && name.trim())
+            set({ notEnablePlayerNameList: names.sort(() => Math.random() - .5) })
+          }
+          if (messages.status === 'fulfilled') {
+            set({ supportMessages: messages.value.filter(row => typeof row.content === 'string' && row.content.trim()) })
+          }
+          set({ isConnectedToNetwork: [scores, helpers, messages].every(result => result.status === 'fulfilled') })
+        } finally {
+          loading = false
+        }
+      },
+    }
+  })
+)

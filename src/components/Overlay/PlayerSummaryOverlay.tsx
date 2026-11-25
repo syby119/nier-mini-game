@@ -1,10 +1,11 @@
+import { keepEndingSave } from '../../lib/endingSave'
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { INieRButtonsConfigs, NieRCustomBox } from './NieRCustomBox'
 import usePlayerStore from '../../store/PlayerStore';
 import { animated, useSpring, useSprings } from '@react-spring/web';
 import systemInfoStore from '../../store/SystemInfoStore';
 import { useTranslations } from 'next-intl';
-import useAudioStore from '../../store/AudioStore';
+import { stopCreditsMusic } from '../../store/CreditsMusic';
 import { useOverlayStore } from '../../store/OverlayStore';
 import { useNotificationStore } from '../../store/NotificationStore';
 
@@ -19,8 +20,8 @@ export default function PlayerSummaryOverlay() {
     const [formValue, setFormValue] = useState<{ name: string }>({
         name: ''
     })
+    const [saveError, setSaveError] = useState(false)
     const [buttonDisabled, setButtonDisabled] = useState<boolean>(false)
-    const { stop: stopAudio } = useAudioStore();
     const t = useTranslations()
 
     const formatTime = (time: number) => {
@@ -59,7 +60,7 @@ export default function PlayerSummaryOverlay() {
     }, [startDestroyPlayerSummaryAnimation])
 
     useEffect(() => {
-        stopAudio('Weight of the World')
+        stopCreditsMusic()
     }, [])
 
     const [springs, api] = useSprings(
@@ -77,6 +78,7 @@ export default function PlayerSummaryOverlay() {
     const handleSavePlayerSummary = async () => {
         setButtonDisabled(true)
         try {
+            setSaveError(false)
             const req = await fetch('/api/saveResult', {
                 method: 'POST',
                 headers: {
@@ -87,7 +89,9 @@ export default function PlayerSummaryOverlay() {
                     score: playerShareInfo.points,
                 }),
             });
+            if (!req.ok) throw new Error(String(req.status))
             setPlayerShareInfo(formValue)
+            keepEndingSave(usePlayerStore.getState().playerShareInfo)
             setStartCloseAnimation(true)
             setTimeout(() => {
                 setShowOverlay('playerSummaryOverlay', false)
@@ -95,7 +99,7 @@ export default function PlayerSummaryOverlay() {
             }, 1500)
         } catch (e) {
             setButtonDisabled(false)
-            console.log(e)
+            setSaveError(true)
         }
     }
 
@@ -146,6 +150,7 @@ export default function PlayerSummaryOverlay() {
         <NieRCustomBox buttonsConfigs={buttonsConfigs} startCloseAnimation={startCloseAnimation} buttonDisabled={buttonDisabled} disableGamePad>
             <div className="text-2xl text-[#DAD4BB] bg-[#4E4B42] w-full text-start px-4 py-2">
                 {t('notice')}
+                {saveError && <p role="alert">{t('finale.saveError')}</p>}
             </div>
             <div className='p-4 flex flex-col gap-4 min-h-40 max-h-full overflow-y-scroll custom-scrollbar'>
                 <div className='text-xl text-[#4E4B42] text-clip'>

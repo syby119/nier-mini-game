@@ -309,3 +309,5 @@ export class GamepadManager extends EventEmitter {
     return this.isIdle;
   }
 }
+
+export const menuGamepad = new GamepadManager();

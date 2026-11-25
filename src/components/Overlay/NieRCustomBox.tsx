@@ -1,7 +1,7 @@
 import React, { FC, useContext, useEffect, useRef, useState } from 'react'
 import { YoRHaButton } from '../YoRHaButton'
 import { useSpring, animated } from '@react-spring/web';
-import { GamepadManager } from '../../modules/GamepadManager';
+import { menuGamepad as gamepadManager } from '../../modules/GamepadManager';
 import useAudioStore from '../../store/AudioStore';
 
 export interface IPlayerResult {
@@ -10,7 +10,6 @@ export interface IPlayerResult {
     score: number;
 }
 
-const gamepadManager = new GamepadManager();
 const AnimatedDiv = animated('div');
 const AnimatedP = animated('p');
 
