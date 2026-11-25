@@ -37,7 +37,6 @@ const initializeSoundsWithPool = (): Record<string, { pool: Howl[]; index: numbe
             { name: 'coreExplode1', src: 'nier/sound/sfx/coreExplode1.ogg', volume: 0.3 },
             { name: 'playerExplode', src: 'nier/sound/sfx/playerExplode.ogg', volume: 0.3 },
             { name: 'playerHit', src: 'nier/sound/sfx/playerHit.ogg', volume: 0.3 },
-            { name: 'Weight of the World', src: 'nier/sound/music/Weight of the World - 8 bit.mp3', volume: 0.3, loop: true },
         ];
 
     audioList.forEach((audio) => {

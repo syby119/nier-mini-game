@@ -1,6 +1,5 @@
 import { create } from "zustand";
-import { devtools, subscribeWithSelector } from "zustand/middleware";
-import { v4 as uuid } from "uuid";
+import { subscribeWithSelector } from "zustand/middleware";
 
 interface ISystemInfo {
   mainOverlayShowed: boolean;
@@ -27,12 +26,6 @@ interface SystemInfoContextType {
   updateSystemInfo: (updates: Partial<ISystemInfo>) => void;
   importantPhaseRecord: string;
   setImportantPhaseRecord: (phase: string) => void;
-  isFinaleConfirmed: boolean;
-  setFinaleConfirmed: (value: boolean) => void;
-  startDestroyOnlineResultAnimation: boolean;
-  setStartDestroyOnlineResultAnimation: (value: boolean) => void;
-  startDestroyPlayerSummaryAnimation: boolean;
-  setStartDestroyPlayerSummaryAnimation: (value: boolean) => void;
   postEffects: boolean;
   setPostEffects: (value: boolean) => void;
 }
@@ -72,21 +65,6 @@ const systemInfoStore = create<SystemInfoContextType>()(
       })),
     importantPhaseRecord: "",
     setImportantPhaseRecord: (phase) => set({ importantPhaseRecord: phase }),
-    isFinaleConfirmed: false,
-    setFinaleConfirmed: (value) =>
-      set((state) => ({
-        isFinaleConfirmed: value,
-      })),
-    startDestroyOnlineResultAnimation: false,
-    setStartDestroyOnlineResultAnimation: (value) =>
-      set((state) => ({
-        startDestroyOnlineResultAnimation: value,
-      })),
-    startDestroyPlayerSummaryAnimation: false,
-    setStartDestroyPlayerSummaryAnimation: (value) =>
-      set((state) => ({
-        startDestroyPlayerSummaryAnimation: value,
-      })),
     postEffects: true,
     setPostEffects: (value) =>
       set((state) => ({

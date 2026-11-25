@@ -10,6 +10,10 @@ export default function PlayTimerCounter() {
     const timer = useRef<number>(0);
 
 
+    useEffect(() => {
+        if (!gameStarted) timer.current = 0
+    }, [gameStarted])
+
     useFixedFrameUpdate((state, delta) => {
         if (gameStarted) {
             timer.current += delta;

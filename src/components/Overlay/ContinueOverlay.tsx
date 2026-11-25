@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import PubSub from 'pubsub-js'
 import { joinCreditsChoir, stopCreditsMusic } from '../../store/CreditsMusic'
@@ -6,9 +6,10 @@ import { useNetworkStore } from '../../store/NetworkStore'
 import { useOverlayStore } from '../../store/OverlayStore'
 import usePlayerStore from '../../store/PlayerStore'
 import systemInfoStore from '../../store/SystemInfoStore'
-import DeathDialogue from './DeathDialogue'
+import DialoguePage from './DialoguePage'
+import GameDialog from './GameDialog'
 import DeathMessages from './DeathMessages'
-import styles from './ContinueOverlay.module.css'
+import styles from './GameDialogue.module.css'
 
 const questions = [
   { key: 'giveUpMsg1', duration: 400 },
@@ -27,18 +28,11 @@ export default function ContinueOverlay() {
   const [stage, setStage] = useState<Stage>('burst')
   const [showMessages, setShowMessages] = useState(true)
   const [rescuer, setRescuer] = useState('')
-  const dialog = useRef<HTMLDialogElement>(null)
   const outcome = useRef<Outcome>('retry')
   const setShowOverlay = useOverlayStore(state => state.setShowOverlay)
   const question = questions[(deathCount - 1) % questions.length]
   const isDialogue = stage === 'question' || stage === 'offer' || stage === 'accept'
   const hasMessages = deathCount >= 2 && stage !== 'burst' && stage !== 'received'
-
-  useLayoutEffect(() => {
-    const element = dialog.current!
-    element.showModal()
-    return () => element.close()
-  }, [])
 
   useEffect(() => {
     const network = useNetworkStore.getState()
@@ -106,8 +100,7 @@ export default function ContinueOverlay() {
     : stage === 'accept' ? 400 : question.duration
 
   return (
-    <dialog ref={dialog} className={styles.scene} data-stage={stage}
-      aria-label={isDialogue ? line : t('notice')} onCancel={event => event.preventDefault()}>
+    <GameDialog data-stage={stage} aria-label={isDialogue ? line : t('notice')}>
       {hasMessages && <DeathMessages deathCount={deathCount} visible={showMessages} />}
       {stage === 'received' && (
         <div className={styles.received} role="status">
@@ -122,10 +115,10 @@ export default function ContinueOverlay() {
         </button>
       </div>}
       {isDialogue &&
-        <DeathDialogue key={stage} line={line} duration={duration} notice={stage === 'offer'}
-          firstIsYes={stage === 'accept'} onConfirm={answer}
+        <DialoguePage key={stage} line={line} duration={duration} onConfirm={answer}
+          choices={stage === 'offer' ? undefined : stage === 'accept' ? [t('yes'), t('no')] : [t('no'), t('yes')]}
           onChangeDisplay={hasMessages ? () => setShowMessages(value => !value) : undefined} />
       }
-    </dialog>
+    </GameDialog>
   )
 }

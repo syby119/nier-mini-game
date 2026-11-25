@@ -1,6 +1,5 @@
 .finale { background: #1e1d19; }
-.finale[data-light="true"] { background: #edede4; }
-.finale[data-light="true"] [class*="_band"] { background: linear-gradient(transparent, #96958e 10%); }
+.finale[data-light="true"] { background: #edede4; --dialogue-band: linear-gradient(transparent, #96958e 10%); }
 .speaker {
   position: absolute; bottom: 22%; left: 6%; width: 18%; padding: .25em 1.2em;
   text-align: right; background: linear-gradient(90deg, transparent, #36352f);

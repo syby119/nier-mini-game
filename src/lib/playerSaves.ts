@@ -75,12 +75,9 @@ export async function saveScore(id: string, name: string, score: number): Promis
   const initial = { id, enable: true, name, score, region: '', content: '', createdAt: now, updatedAt: now }
   if (process.env.MONGODB_URI) {
     const table = await collection()
-    const current = await table.findOne({ id })
-    if (current?.enable === false) return saveScore(randomUUID(), name, score)
-    await table.updateOne({ id }, {
-      $set: { name, score, updatedAt: now },
-      $setOnInsert: { id, enable: true, region: '', content: '', createdAt: now },
-    }, { upsert: true })
+    await table.updateOne({ id }, { $setOnInsert: initial }, { upsert: true })
+    const result = await table.updateOne({ id, enable: { $ne: false } }, { $set: { name, score, updatedAt: now } })
+    if (!result.matchedCount) return saveScore(randomUUID(), name, score)
   } else {
     const saved = await localUpdate(id, current => {
       if (!current) return initial
@@ -100,13 +97,14 @@ export async function saveMessage(id: string, content: string, region: string) {
   return !!saved?.enable
 }
 
-export async function donateSave(id: string, stats: RunStats) {
-  const changes = { stats, enable: false, updatedAt: new Date() }
+export async function donateSave(id: string, stats?: RunStats) {
+  const changes = { ...(stats && { stats }), enable: false, updatedAt: new Date() }
   if (process.env.MONGODB_URI) {
     const table = await collection()
-    const result = await table.updateOne({ id, enable: true }, { $set: changes })
-    return result.matchedCount > 0 || !!await table.findOne({ id, enable: false }, { projection: { _id: 1 } })
+    const record = await table.findOneAndUpdate({ id, enable: true }, { $set: changes }, { returnDocument: 'after', projection: { name: 1 } })
+      || await table.findOne({ id, enable: false }, { projection: { name: 1 } })
+    return record ? record.name || 'PLAYER' : null
   }
   const saved = await localUpdate(id, row => row?.enable ? { ...row, ...changes } : row)
-  return !!saved
+  return saved ? saved.name || 'PLAYER' : null
 }

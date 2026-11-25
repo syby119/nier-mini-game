@@ -1,12 +1,11 @@
 import { ColliderProps, CollisionTarget, CuboidArgs, CuboidCollider, euler, interactionGroups, MeshCollider, RigidBody, RigidBodyProps, vec3 } from '@react-three/rapier'
 import React, { memo, useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
-import { Html, Text } from '@react-three/drei'
+import { Text } from '@react-three/drei'
 import { useThree } from '@react-three/fiber'
 import usePlayerRigidBodyInfo from '../hook/usePlayerRigidBodyInfo'
 import { EnemyProps, StrongType } from '../data/EnemyData'
 import useAudioStore from '../store/AudioStore'
-import { animated, useSpring } from '@react-spring/web'
 import { useFixedFrameUpdate } from '../hook/useFixedFrameUpdate'
 import { useTimeout } from 'react-use'
 import useGamePauseStore from '../store/GamePauseStore'
@@ -60,7 +59,6 @@ export const Enemy = ({
         timeOffset: Math.random() * Math.PI * 2, // 随机时间偏移，范围 [0, 2π]
     };
     const healthRef = useRef<number>(health)
-    const [finalConfirmEnemyHealth, setFinalConfirmEnemyHealth] = useState<number>(health)
     const { viewport, size } = useThree();
     const spawnEffect = useRef<boolean>(false)
     const isPause = useGamePauseStore(state => state.isPaused)
@@ -158,11 +156,7 @@ export const Enemy = ({
             // 每次都减少 size.x 的一半，是因为文字的锚点是在中心的
             size.x = size.x / 2 + 0.02;
             size.y = size.y / 2 + 0.02;
-            if (id == "enemy_final_confirm") {
-                setCuboidSize([0.45, 0.05, 0.01]);
-            } else {
-                setCuboidSize([size.x, size.y, 0.01]); // 更新碰撞体大小
-            }
+            setCuboidSize([size.x, size.y, 0.01]);
         }
     };
 
@@ -388,9 +382,6 @@ export const Enemy = ({
         handleOnHitPlayAudio()
         if (other.rigidBodyObject?.userData?.type == 'player_projectile') {
             healthRef.current -= 1
-            if (id == 'enemy_final_confirm') {
-                setFinalConfirmEnemyHealth((prev) => prev - 1)
-            }
             if (healthRef.current <= 0) {
                 PubSub.publish('startEnemyExplosionParticle', {
                     position: vec3(cuboidColliderRef.current.translation()),
@@ -662,9 +653,6 @@ export const Enemy = ({
                     visible={false}
                 >
                     {text}
-                    {id == 'enemy_final_confirm' && <Html>
-                        <OnHitAnimatedYoRHaButton text={text} value={finalConfirmEnemyHealth} maxValue={health} />
-                    </Html>}
                 </Text>
             </RigidBody>
             <group name={`${strongType.toLowerCase()}EnemyShootingPort`}>
@@ -682,62 +670,6 @@ export const Enemy = ({
         </group>
     )
 }
-
-const AnimatedDiv = animated('div');
-const OnHitAnimatedYoRHaButton = ({ text, value, maxValue }: { text: string, value: number, maxValue: number }) => {
-    const [styles, api] = useSpring(() => ({
-        from: { opacity: 0 },
-        to: async (next) => {
-            await next({ opacity: 1 });
-        },
-        onRest: () => { },
-        config: { duration: 200 },
-    }));
-    const [fillValue, setFillValue] = useState(0); // 控制动画填充效果的状态
-    const maxFillValue = maxValue; // 最大填充值
-
-    // 用于处理填充效果的函数
-    const handleFill = () => {
-        if (fillValue < maxFillValue) {
-            setFillValue(prev => prev + 1); // 增加填充值
-        }
-    };
-
-    const getWith = () => {
-        if (value == maxValue) return 0
-        const wValue = (fillValue / maxFillValue) * 100
-        return wValue
-    }
-
-    useEffect(() => {
-        handleFill()
-    }, [value])
-
-    return (
-        <AnimatedDiv className="pointer-events-none top-[-1.5em] left-[-15em] absolute z-10" style={styles}>
-            <button
-                className={`group min-w-[30em] relative overflow-hidden font-medium py-2 px-4 transition-colors duration-300 flex items-center justify-start gap-2
-                    bg-[#B3AE98]
-                    ${getWith() >= 20
-                        ? "text-[#B3AE98]"
-                        : "text-[#524E45]"
-                    }`}
-            >
-                {/* 动画填充效果 */}
-                <span
-                    className={`absolute inset-0 bg-[#524E45] transition-all duration-150 ease-in-out`}
-                    style={{ width: `${getWith()}%` }} // 根据填充值动态设置宽度
-                ></span>
-
-                {/* 按钮内容 */}
-                <div
-                    className={`w-5 h-5 ${getWith() >= 10 ? "bg-[#B3AE98]" : "bg-[#524E45]"} relative z-10 transition-colors`}
-                />
-                <p className="text-lg relative z-10">{text}</p>
-            </button>
-        </AnimatedDiv>
-    );
-};
 
 const ShootingPortMesh = memo(({ name, refProp, rotation = [0, 0, 0], visible, geometryType = "box" }: {
     name: string,

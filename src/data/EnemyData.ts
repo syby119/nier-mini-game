@@ -1848,15 +1848,3 @@ export const EnemyData: EnemyProps[] = [
     health: 100,
   },
 ];
-
-export const FinalConfirmEnemy: EnemyProps = {
-  id: "enemy_final_confirm",
-  initPosition: vec3({ x: 0, y: 0, z: 0 }),
-  text: "⁣⁣⁣⁣⁣⁣YES⁣⁣⁣",
-  phase: "final_confirm",
-  childrenIds: [],
-  strongType: StrongType.NORMAL,
-  enableShoot: false,
-  points: 0,
-  health: 30,
-};

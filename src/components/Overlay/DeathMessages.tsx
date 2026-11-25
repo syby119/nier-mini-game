@@ -1,6 +1,6 @@
 import { CSSProperties } from 'react'
 import { useNetworkStore, SupportMessage } from '../../store/NetworkStore'
-import styles from './ContinueOverlay.module.css'
+import styles from './GameDialogue.module.css'
 
 // The offline messages are taken from the finale recording. Keep the original
 // languages and signatures where they are legible in the footage.
@@ -37,6 +37,7 @@ const placements = [
   { x: 61, y: 12, size: 8, opacity: .66 },
   { x: 96, y: 58, size: 7.8, opacity: .7 },
 ]
+const distantMessage = { x: 31, y: 24, size: 5.8, opacity: .27 }
 
 export default function DeathMessages({ deathCount, visible }: { deathCount: number, visible: boolean }) {
   const live = useNetworkStore(state => state.supportMessages)
@@ -45,7 +46,8 @@ export default function DeathMessages({ deathCount, visible }: { deathCount: num
   return (
     <div className={styles.messages} data-visible={visible} aria-hidden="true">
       {messages.map((message, index) => {
-        const { x, y, size, opacity } = placements[index]
+        // The new bilingual line occupies the foreground on the fourth death.
+        const { x, y, size, opacity } = index === 1 && deathCount >= 4 ? distantMessage : placements[index]
         const text = [message.name, '“' + message.content + '”', message.region].filter(Boolean).join('  ')
         const translation = 'translation' in message ? message.translation : undefined
         const style = {

@@ -1,19 +1,18 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Enemy } from './Enemy'
-import { EnemyData, EnemyProps, FinalConfirmEnemy } from '../data/EnemyData'
-import { Html, Text } from '@react-three/drei';
+import { EnemyData, EnemyProps } from '../data/EnemyData'
 import usePlayerStore from '../store/PlayerStore';
 import { useDebouncedCallback } from 'use-debounce';
 import systemInfoStore from '../store/SystemInfoStore';
 import useAudioStore from '../store/AudioStore';
-import { useCutsceneStore } from '../store/CutsceneStore';
+import { useOverlayStore } from '../store/OverlayStore';
 
 
 export const EnemySystem = React.memo(() => {
     const currentPhase = systemInfoStore(state => state.systemInfo.currentPhase);
     const setImportantPhaseRecord = systemInfoStore(state => state.setImportantPhaseRecord);
     const setCurrentPhase = systemInfoStore(state => state.setCurrentPhase);
-    const startCutscene = useCutsceneStore(state => state.startCutscene);
+    const setOverlay = useOverlayStore(state => state.setShowOverlay);
     const setPlayerShareInfo = usePlayerStore(state => state.setPlayerShareInfo);
     const updatePlayerInfo = usePlayerStore(state => state.updatePlayerInfo);
     const playerHealth = usePlayerStore(state => state.playerInfo.playerHealth);
@@ -76,49 +75,16 @@ export const EnemySystem = React.memo(() => {
             pendingEnemies.current.clear();
         })
 
-        const setFinalConfirmEnemiesDataToken = PubSub.subscribe("setFinalConfirmEnemiesData", (msg: any, data: EnemyProps) => {
-            //设置最终确认敌人数据 FinalConfirmEnemy
-            timersRef.current.forEach(timer => clearTimeout(timer)); // 清除所有定时器
-            timersRef.current.clear(); // 清空定时器引用
-            const newMap = new Map();
-            newMap.set(FinalConfirmEnemy.id, FinalConfirmEnemy);
-            setEnemiesMap(newMap);
-            defeatedEnemyIds.current.clear();
-            pendingEnemies.current.clear();
-        })
-
         return () => {
             timersRef.current.forEach(timer => clearTimeout(timer));
             timersRef.current.clear();
             PubSub.unsubscribe(resetEnemiesDataToken);
-            PubSub.unsubscribe(setFinalConfirmEnemiesDataToken);
         };
     }, []);
 
-    const handleFinalConfirmEnemyOnDeath = () => {
-        setTimeout(() => {
-            startCutscene('startDestroyOnlineResultOverlay')
-            new Promise(async (resolve) => {
-                const req = await fetch('/api/destroy', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                })
-                const req2 = await fetch('/api/gameClear')
-                resolve(null)
-            }).catch(() => { })
-
-        }, 3000)
-        setTimeout(() => {
-            PubSub.publish("setDisablePlayerMove", true);
-            PubSub.publish("setPlayerVisibleModel", false);
-        }, 4000)
-    }
-
     const handleFinalEnemyOnDeath = () => {
         setTimeout(() => {
-            startCutscene('startPlayerSummary')
+            setOverlay('scoreTransition', true)
             setPlayerShareInfo({ points: pointsRef.current });
             updatePlayerInfo({ needOtherPlayerHelp: false })
         }, 3000)
@@ -151,8 +117,6 @@ export const EnemySystem = React.memo(() => {
         playAudio('coreExplode1');
         if (id == "enemy_final") {
             handleFinalEnemyOnDeath()
-        } else if (id == 'enemy_final_confirm') {
-            handleFinalConfirmEnemyOnDeath()
         }
         checkPendingEnemies({
             id,
@@ -195,16 +159,6 @@ export const EnemySystem = React.memo(() => {
 
     return (
         <>
-            <Html>
-                {/* <button className='text-white' onClick={() => {
-                    // const newMap = new Map();
-                    // newMap.set(FinalConfirmEnemy.id, FinalConfirmEnemy);
-                    // setEnemiesMap(newMap);
-                    addNotification(t("unlockDebugMenu") + Math.random())
-                }}>
-                    log
-                </button> */}
-            </Html>
             {Array.from(enemiesMap.values()).map(enemy => (
                 <Enemy
                     key={enemy.id}

@@ -42,7 +42,7 @@
 .band {
   bottom: 0;
   height: 21.9%;
-  background: linear-gradient(to bottom, transparent, rgb(45 45 43 / 91%) 14%, #2d2d2b);
+  background: var(--dialogue-band, linear-gradient(to bottom, transparent, rgb(45 45 43 / 91%) 14%, #2d2d2b));
   animation: appear 120ms linear both;
 }
 .ornament { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }

@@ -12,14 +12,12 @@ interface OverlayStore {
     mainTitleOverlay: true,
     continueOverlay: false,
     titleScreenOverlay: false,
-    finalConfirmOverlay: false,
+    scoreTransition: false,
     onlineResultOverlay: false,
     playerSummaryOverlay: false,
     requestPlayerInfoOverlay: false,
     requestPlayerInfoPhase2Overlay: false,
     requestPlayerInfoPhase3Overlay: false,
-    requestPlayerInfoPhase4Overlay: false,
-    thanksForPlayOverlay: false,
   };
   
   export const useOverlayStore = create<OverlayStore>()(

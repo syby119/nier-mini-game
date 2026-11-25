@@ -1,15 +1,13 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { GamepadState, menuGamepad } from '../../modules/GamepadManager'
 import useAudioStore from '../../store/AudioStore'
-import styles from './ContinueOverlay.module.css'
+import styles from './GameDialogue.module.css'
 
 interface DialogueProps {
   line: string
   duration: number
-  notice: boolean
-  labels?: readonly [string, string]
-  firstIsYes: boolean
+  choices?: readonly [string, string]
   onConfirm: (index: number) => void
   onChangeDisplay?: () => void
 }
@@ -23,7 +21,7 @@ function padKeys({ buttons, axes }: GamepadState) {
   }
 }
 
-export default function DeathDialogue({ line, duration, notice, firstIsYes, labels: customLabels, onConfirm, onChangeDisplay }: DialogueProps) {
+export default function DialoguePage({ line, duration, choices, onConfirm, onChangeDisplay }: DialogueProps) {
   const t = useTranslations()
   const [length, setLength] = useState(0)
   const [ready, setReady] = useState(false)
@@ -33,7 +31,7 @@ export default function DeathDialogue({ line, duration, notice, firstIsYes, labe
   const confirmed = useRef(false)
   const timer = useRef<number | undefined>(undefined)
   const letters = Array.from(line)
-  const labels = customLabels ?? (firstIsYes ? [t('yes'), t('no')] : [t('no'), t('yes')])
+  const notice = !choices
 
   useEffect(() => {
     root.current?.focus({ preventScroll: true })
@@ -53,14 +51,14 @@ export default function DeathDialogue({ line, duration, notice, firstIsYes, labe
     }
   }, [line, letters.length, duration])
 
-  function confirm(index: number) {
+  const confirm = useCallback((index: number) => {
     if (!ready || confirmed.current) return
     confirmed.current = true
     setSelected(index)
     setConfirming(true)
     useAudioStore.getState().play('buttonClick')
     timer.current = window.setTimeout(() => onConfirm(index), notice ? 50 : 300)
-  }
+  }, [ready, notice, onConfirm])
 
   useEffect(() => {
     function move(direction: number) {
@@ -98,7 +96,7 @@ export default function DeathDialogue({ line, duration, notice, firstIsYes, labe
       window.removeEventListener('keydown', keydown)
       menuGamepad.off('update', gamepad)
     }
-  }, [ready, notice, selected, onConfirm, onChangeDisplay])
+  }, [ready, notice, selected, confirm, onChangeDisplay])
 
   const text = <span className={styles.line} aria-hidden="true">{letters.slice(0, length).join('')}</span>
   return (
@@ -110,8 +108,8 @@ export default function DeathDialogue({ line, duration, notice, firstIsYes, labe
             disabled={!ready} onClick={() => confirm(0)}>{text}</button>
         ) : text}
       </div>
-      {!notice && ready && <div className={styles.choices}>
-        {labels.map((label, index) => (
+      {choices && ready && <div className={styles.choices}>
+        {choices.map((label, index) => (
           <button type="button" key={label} className={styles.choice}
             data-selected={selected === index}
             aria-disabled={confirming} onFocus={() => !confirmed.current && setSelected(index)}
