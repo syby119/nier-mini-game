@@ -1,0 +1,80 @@
+.title {
+  /* The reference title is centered at 47% of the frame height. */
+  position: absolute;
+  z-index: 1;
+  top: 47%;
+  left: 49.6%;
+  width: min(86%, 103vh, max(54.5%, 32rem));
+  aspect-ratio: 600 / 72;
+  transform: translate(-50%, -50%);
+  container-type: inline-size;
+  pointer-events: none;
+  color: #f2eee5;
+
+  /* The vector artwork and animated chips share a 600 × 72 coordinate system. */
+  --art-pixel: calc(100cqw / 600);
+  /* The gear forms the dot of the i. */
+  --gear-x: calc(81 * var(--art-pixel));
+  --gear-y: calc(12.75 * var(--art-pixel));
+  --gear-radius: calc(12.25 * var(--art-pixel));
+}
+
+.title::after {
+  content: '';
+  position: absolute;
+  inset: auto -12% 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #f2eee56b 22%, #f2eee5a3 50%, #f2eee56b 78%, transparent);
+}
+
+.ink {
+  position: absolute;
+  inset: 0;
+  mask-image: url('/images/nier-title-lettering.svg');
+}
+
+.ink,
+.gear {
+  background-color: currentColor;
+  mask-size: 100% 100%;
+  mask-position: center;
+  mask-repeat: no-repeat;
+  mask-mode: alpha;
+}
+
+.glitchTile {
+  position: absolute;
+  opacity: 0;
+  background: linear-gradient(90deg, #141828 62%, #fff9e9 62%);
+  animation: glitchFlash 2.8s step-end infinite;
+}
+
+.glitchTile:nth-child(even) {
+  transform: scaleX(-1);
+  animation-duration: 3.7s;
+}
+
+@keyframes glitchFlash {
+  0%, 9%, 20%, 66%, 78%, 100% { opacity: 0; }
+  5%, 71% { opacity: 0.9; }
+  16%, 75% { opacity: 0.5; }
+}
+
+.gear {
+  position: absolute;
+  left: calc(var(--gear-x) - var(--gear-radius));
+  top: calc(var(--gear-y) - var(--gear-radius));
+  width: calc(2 * var(--gear-radius));
+  aspect-ratio: 1;
+  mask-image: url('/images/nier-title-gear.svg');
+  animation: turn 7.4s linear infinite;
+}
+
+@keyframes turn {
+  to { transform: rotate(-1turn); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gear,
+  .glitchTile { animation: none; }
+}

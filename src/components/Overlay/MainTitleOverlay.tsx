@@ -10,10 +10,39 @@ import { useDetectGPU } from '@react-three/drei'
 import { useOverlayStore } from '../../store/OverlayStore'
 import { useNotificationStore } from '../../store/NotificationStore'
 import NierCoverScene from './NierCoverScene'
+import cover from './MainTitleOverlay.module.css'
 
 const gamepadManager = new GamepadManager()
 const AnimatedDiv = animated('div')
 const MENU_ITEMS = ['new-game', 'settings'] as const
+
+// Bounds of the existing chips along the diagonal seam of the 600 × 72 wordmark.
+const glitchTiles = [
+  [268, 57, 12, 7],
+  [309, 54, 8, 3],
+  [326, 49, 9, 11],
+  [337, 42, 5, 4],
+  [351, 50, 9, 6],
+  [364, 42, 7, 7],
+  [374, 36, 9, 12],
+  [386, 16, 7, 8],
+  [393, 16, 14, 8],
+  [410, 20, 13, 5],
+  [427, 8, 14, 6],
+  [441, 14, 10, 5],
+  [452, 1, 23, 13],
+  [461, 14, 5, 6],
+  [496, 1, 12, 7],
+  [509, 10, 8, 6],
+  [529, 1, 10, 9],
+  [540, 11, 7, 6],
+].map(([x, y, width, height], index) => ({
+  left: `calc(${x} * var(--art-pixel))`,
+  top: `calc(${y} * var(--art-pixel))`,
+  width: `calc(${width} * var(--art-pixel))`,
+  height: `calc(${height} * var(--art-pixel))`,
+  animationDelay: `${-index * 283}ms`,
+}))
 
 const getMenuLabel = (item: (typeof MENU_ITEMS)[number]) => {
   switch (item) {
@@ -192,21 +221,17 @@ export default function MainTitleOverlay() {
   return (
     <AnimatedDiv className="absolute inset-0 overflow-hidden pointer-events-auto" style={{ opacity: styles.mainTitle }}>
       <NierCoverScene />
-      <div className="relative z-10 flex h-full flex-col items-center justify-end px-6 pb-[7vh] pt-24 text-[#f2efdf]">
-        <div className="w-full max-w-[980px]">
-          <div className="flex flex-col items-center text-center">
-            <div className="w-full max-w-[620px] aspect-[6.4/1] overflow-hidden">
-              <img
-                src="/images/nier-automata-logo.jpg"
-                alt="NieR:Automata"
-                width={700}
-                height={420}
-                className="h-full w-full object-cover object-center"
-              />
-            </div>
-          </div>
-
-          <div className="mt-[20vh] flex flex-col items-center">
+      <h1 className={cover.title} aria-label="NieR:Automata">
+        <span className={cover.ink} aria-hidden="true">
+          {glitchTiles.map((style, index) => (
+            <span key={index} className={cover.glitchTile} style={style} />
+          ))}
+        </span>
+        <span className={cover.gear} aria-hidden="true" />
+      </h1>
+      <div className="absolute inset-x-0 bottom-0 top-[55%] z-10 overflow-y-auto px-6 pb-[7vh] text-[#f2efdf]">
+        <div className="mx-auto flex min-h-full w-full max-w-[980px] flex-col justify-end">
+          <div className="flex flex-col items-center">
             {MENU_ITEMS.map((item, index) => {
               const selected = selectedIndex === index
               const label = getMenuLabel(item)
