@@ -11,7 +11,7 @@
   pointer-events: none;
   color: #f2eee5;
 
-  /* The vector artwork and animated chips share a 600 × 72 coordinate system. */
+  /* The lettering, motion masks and gear share a 600 × 72 coordinate system. */
   --art-pixel: calc(100cqw / 600);
   /* The gear forms the dot of the i. */
   --gear-x: calc(81 * var(--art-pixel));
@@ -29,35 +29,50 @@
 
 .ink {
   position: absolute;
-  inset: 0;
-  mask-image: url('/images/nier-title-lettering.svg');
+  /* The strongest frames extend past the edges of the static wordmark. */
+  inset: calc(-12 * var(--art-pixel));
+  --letters: url('/images/nier-title-lettering.svg');
+  --letter-size: calc(600 * var(--art-pixel)) calc(72 * var(--art-pixel));
 }
 
-.ink,
+.ink::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  mask-image: var(--letters);
+  mask-size: var(--letter-size);
+}
+
+.ink::before,
+.ink::after,
 .gear {
   background-color: currentColor;
-  mask-size: 100% 100%;
   mask-position: center;
   mask-repeat: no-repeat;
   mask-mode: alpha;
 }
 
-.glitchTile {
-  position: absolute;
-  opacity: 0;
-  background: linear-gradient(90deg, #141828 62%, #fff9e9 62%);
-  animation: glitchFlash 2.8s step-end infinite;
-}
+@supports (mask-composite: subtract) {
+  @media (prefers-reduced-motion: no-preference) {
+    /* One animated image keeps the removed and added strokes on the same clock. */
+    .ink { --faults: url('/images/nier-title-glitch.svg'); }
 
-.glitchTile:nth-child(even) {
-  transform: scaleX(-1);
-  animation-duration: 3.7s;
-}
+    .ink::before {
+      mask-image: var(--letters), var(--faults);
+      mask-size: var(--letter-size), 100% 200%;
+      mask-position: center, top;
+      mask-composite: subtract;
+    }
 
-@keyframes glitchFlash {
-  0%, 9%, 20%, 66%, 78%, 100% { opacity: 0; }
-  5%, 71% { opacity: 0.9; }
-  16%, 75% { opacity: 0.5; }
+    .ink::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      mask-image: var(--faults);
+      mask-size: 100% 200%;
+      mask-position: bottom;
+    }
+  }
 }
 
 .gear {
@@ -67,7 +82,9 @@
   width: calc(2 * var(--gear-radius));
   aspect-ratio: 1;
   mask-image: url('/images/nier-title-gear.svg');
-  animation: turn 7.4s linear infinite;
+  mask-size: 100% 100%;
+  /* Starting phase and rotation period measured in the flower-field recording. */
+  animation: turn 5.983s linear -695ms infinite;
 }
 
 @keyframes turn {
@@ -75,6 +92,5 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .gear,
-  .glitchTile { animation: none; }
+  .gear { animation: none; }
 }
