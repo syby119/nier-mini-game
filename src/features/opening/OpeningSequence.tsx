@@ -1,3 +1,4 @@
+import { setMusicDucking } from '@/features/audio/AudioStore'
 import { startCreditsMusic, stopCreditsMusic } from '@/features/audio/CreditsMusic'
 import { playPodVoice } from '@/features/audio/PodVoice'
 import type { PodLanguage } from '@/features/audio/podLanguage'
@@ -36,6 +37,7 @@ export default function OpeningSequence({ fromSave = false, voiceLanguage }: { f
   const inDeathDialogue = useOverlayStore(state => state.isShowOverlay.continueOverlay)
   const frozen = cue === 'contact' || (typeof cue === 'number' && cue >= 8)
   const noise = cue === 'request' || frozen || (typeof cue === 'number' && cue >= 6)
+  const inCutscene = scene !== 'battle' && !skipCards
   const rollMusic = scene === 'credits' && !frozen
   const voice = typeof cue === 'number' ? openingVoices[cue - 1] : undefined
   const question = cue === 'request' || cue === 31
@@ -49,6 +51,12 @@ export default function OpeningSequence({ fromSave = false, voiceLanguage }: { f
       return current
     })
   }, [cue])
+
+  useEffect(() => {
+    if (!inCutscene) return
+    setMusicDucking('opening', true, 0)
+    return () => setMusicDucking('opening', false)
+  }, [inCutscene])
 
   useEffect(() => {
     if (!rollMusic) return
@@ -80,6 +88,8 @@ export default function OpeningSequence({ fromSave = false, voiceLanguage }: { f
     const fallback = () => schedule(voice.duration[voiceLanguage] + (timedReport ? 0 : 1600))
     fallback()
     const stopVoice = playPodVoice(voiceLanguage, voice.file, {
+      // Both the staff roll and battle radio keep the music level set by their scene.
+      duckMusic: false,
       onPlaying: () => window.clearTimeout(timer),
       onWaiting: fallback,
       onError: fallback,

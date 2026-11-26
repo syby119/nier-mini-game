@@ -25,20 +25,27 @@ type AudioStore = {
   removeSoundByType: (type: string) => void
 }
 
+const duckingLevels = { opening: .2, pod: .1 }
+type DuckingReason = keyof typeof duckingLevels
+
 const lastVoice = new WeakMap<Howl, number>()
-let dialogueMusicLevel = 1
+const duckingReasons = new Set<DuckingReason>()
+let musicDuckingLevel = 1
 
 function applyPoolVolume(soundPool: SoundPool, fadeMs = 0) {
-  const level = soundPool.volume * (soundPool.type === 'music' ? dialogueMusicLevel : 1)
+  const level = soundPool.volume * (soundPool.type === 'music' ? musicDuckingLevel : 1)
   for (const sound of soundPool.pool) {
     if (fadeMs && sound.playing() && sound.volume() !== level) sound.fade(sound.volume(), level, fadeMs)
     else sound.volume(level)
   }
 }
 
-export function setDialogueMusicLevel(level: number, fadeMs: number) {
-  if (level === dialogueMusicLevel) return
-  dialogueMusicLevel = level
+export function setMusicDucking(reason: DuckingReason, active: boolean, fadeMs = active ? 80 : 750) {
+  if (active) duckingReasons.add(reason)
+  else duckingReasons.delete(reason)
+  const level = Math.min(1, ...Array.from(duckingReasons, reason => duckingLevels[reason]))
+  if (level === musicDuckingLevel) return
+  musicDuckingLevel = level
   setCreditsDialogueLevel(level, fadeMs / 1000)
   for (const soundPool of Object.values(useAudioStore.getState().sounds)) {
     if (soundPool.type === 'music') applyPoolVolume(soundPool, fadeMs)
@@ -103,7 +110,7 @@ const useAudioStore = create<AudioStore>((set, get) => ({
       }
       const voice = sound.play(config?.sprite)
       if (config?.volume !== undefined) {
-        sound.volume(config.volume * (soundPool.type === 'music' ? dialogueMusicLevel : 1), voice)
+        sound.volume(config.volume * (soundPool.type === 'music' ? musicDuckingLevel : 1), voice)
       }
       lastVoice.set(sound, voice)
 
@@ -159,7 +166,7 @@ const useAudioStore = create<AudioStore>((set, get) => ({
       pool: Array.from({ length: config?.poolSize || 1 }, () =>
         new Howl({
           src: [src],
-          volume: volume * (config?.type === 'music' ? dialogueMusicLevel : 1),
+          volume: volume * (config?.type === 'music' ? musicDuckingLevel : 1),
           sprite: config?.sprite,
           html5: true,
           loop: config?.loop,

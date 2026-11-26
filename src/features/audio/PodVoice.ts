@@ -1,13 +1,20 @@
-import useAudioStore, { setDialogueMusicLevel } from './AudioStore'
+import useAudioStore, { setMusicDucking } from './AudioStore'
 import { getGameAudioContext, rampGain } from './CreditsMusic'
 import type { PodLanguage } from './podLanguage'
 
-const speaking = new Set<HTMLAudioElement>()
+const duckingVoices = new Set<HTMLAudioElement>()
 let restoreTimer: number | undefined
 
-type VoiceEvents = { onPlaying?: () => void, onWaiting?: () => void, onEnded?: () => void, onError?: () => void }
+type VoiceOptions = {
+  duckMusic?: boolean
+  onPlaying?: () => void
+  onWaiting?: () => void
+  onEnded?: () => void
+  onError?: () => void
+}
 
-export function playPodVoice(language: PodLanguage, file: string, { onPlaying, onWaiting, onEnded, onError }: VoiceEvents = {}) {
+export function playPodVoice(language: PodLanguage, file: string, options: VoiceOptions = {}) {
+  const { duckMusic = true, onPlaying, onWaiting, onEnded, onError } = options
   const root = language === 'ja' ? '/nier/sound/dialogue/ja/' : '/nier/sound/dialogue/'
   const audio = new Audio(root + file)
   audio.lang = language
@@ -33,9 +40,9 @@ export function playPodVoice(language: PodLanguage, file: string, { onPlaying, o
     audio.volume = 1
   }
   function releaseMusic() {
-    if (!speaking.delete(audio) || speaking.size) return
+    if (!duckingVoices.delete(audio) || duckingVoices.size) return
     // Keep the music down over the gaps between consecutive Pod lines.
-    restoreTimer = window.setTimeout(() => setDialogueMusicLevel(1, 750), 600)
+    restoreTimer = window.setTimeout(() => setMusicDucking('pod', false), 600)
   }
   function failed() {
     if (signal.aborted) return
@@ -52,10 +59,10 @@ export function playPodVoice(language: PodLanguage, file: string, { onPlaying, o
   audio.addEventListener('playing', () => {
     connectVoice()
     // The ellipsis clips are authored silence with subtitle timing.
-    if (!file.endsWith('_ellipsis.ogg')) {
+    if (duckMusic && !file.endsWith('_ellipsis.ogg')) {
       window.clearTimeout(restoreTimer)
-      speaking.add(audio)
-      setDialogueMusicLevel(.1, 80)
+      duckingVoices.add(audio)
+      setMusicDucking('pod', true)
     }
     onPlaying?.()
   }, { signal })
