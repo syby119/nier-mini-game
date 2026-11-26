@@ -25,6 +25,8 @@ The project makes extensive use of ChatGPT to generate particle effects and some
 
 Install dependencies with `pnpm install` and run `pnpm dev`. The game opens at [localhost:3000/zh-hk](http://localhost:3000/zh-hk).
 
+Pod 042 and Pod 153 use the original Japanese recordings in Japan, mainland China, Hong Kong, Macao and Taiwan, and English elsewhere. When the host supplies no country, the game uses the browser’s preferred language and region. To choose a dub for the whole game, open the [Japanese version](http://localhost:3000/zh-hk?voice=ja) or the [English version](http://localhost:3000/zh-hk?voice=en).
+
 | Path under `src/` | Responsibility |
 | --- | --- |
 | `app/`, `pages/api/` | Next.js pages, locale routing and HTTP endpoints |
@@ -55,6 +57,8 @@ Run `pnpm dev` and press **F2** or click **選關** to choose a stage by ID and 
 ![Demo4](/git_image/demo4.png)
 
 ## Acknowledgements
+
+The Japanese Pod dialogue comes from the original game audio collected in the [NieR: Automata sound archive](https://steamcommunity.com/groups/nierMnM/discussions/2/135512625246228407/?ctp=4).
 
 This project uses sound effects from [Mugen87's Nier repository](https://github.com/Mugen87/nier) and references several examples from **React Three Fiber/Drei**. Special thanks to **Mugen87** and **Wawa Sensei** for their inspiring code examples.  
 

@@ -1,4 +1,6 @@
 import { playPodVoice } from '@/features/audio/PodVoice'
+import type { PodLanguage } from '@/features/audio/podLanguage'
+import { usePodSubtitle } from '@/features/audio/usePodSubtitle'
 import usePlayerStore from '@/features/combat/player/PlayerStore'
 import { forgetDonation, pendingDonation, rememberDonation } from '@/features/saves/endingSave'
 import { useOverlayStore } from '@/game/state/OverlayStore'
@@ -14,8 +16,9 @@ import SupportMessageEditor from './messages/SupportMessageEditor'
 
 type Screen = 'dialogue' | 'message' | 'upload' | 'saving'
 
-export default function FinaleSaveOverlay({ message = false }: { message?: boolean }) {
+export default function FinaleSaveOverlay({ message = false, voiceLanguage }: { message?: boolean, voiceLanguage: PodLanguage }) {
   const t = useTranslations()
+  const subtitle = usePodSubtitle('finale', voiceLanguage)
   const [pending] = useState(() => pendingDonation(usePlayerStore.getState().playerShareInfo.profileId))
   const [run] = useState(() => pending || usePlayerStore.getState().playerShareInfo)
   const [screen, setScreen] = useState<Screen>(pending ? 'upload' : 'dialogue')
@@ -23,7 +26,7 @@ export default function FinaleSaveOverlay({ message = false }: { message?: boole
   const setOverlay = useOverlayStore(state => state.setShowOverlay)
   const overlay = message ? 'requestPlayerInfoOverlay' : 'requestPlayerInfoPhase3Overlay'
   const question = finaleQuestions.has(line)
-  const text = t('finale.' + line, { name: run.name })
+  const text = subtitle(line, { name: run.name })
   const clip = finaleClips[line - 41]
   const speaker = clip.includes('and_pod153') ? 'Pod 042 / Pod 153' : clip.includes('pod153') ? 'Pod 153' : 'Pod 042'
 
@@ -53,7 +56,7 @@ export default function FinaleSaveOverlay({ message = false }: { message?: boole
         timer = window.setTimeout(advance, delay)
       }
     }
-    const stopVoice = playPodVoice('/nier/sound/dialogue/' + clip, {
+    const stopVoice = playPodVoice(voiceLanguage, clip, {
       onEnded: () => next(420),
       onError: () => next(Math.max(1400, Array.from(text).length * 90)),
     })
@@ -61,7 +64,7 @@ export default function FinaleSaveOverlay({ message = false }: { message?: boole
       window.clearTimeout(timer)
       stopVoice()
     }
-  }, [clip, screen, question, advance, text])
+  }, [clip, voiceLanguage, screen, question, advance, text])
 
   useEffect(() => {
     if (screen !== 'saving') return

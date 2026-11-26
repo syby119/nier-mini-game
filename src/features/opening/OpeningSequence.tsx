@@ -1,5 +1,7 @@
 import { startCreditsMusic, stopCreditsMusic } from '@/features/audio/CreditsMusic'
 import { playPodVoice } from '@/features/audio/PodVoice'
+import type { PodLanguage } from '@/features/audio/podLanguage'
+import { usePodSubtitle } from '@/features/audio/usePodSubtitle'
 import usePlayerStore from '@/features/combat/player/PlayerStore'
 import { startShooting } from '@/game/battleSession'
 import { useOverlayStore } from '@/game/state/OverlayStore'
@@ -25,8 +27,9 @@ function EndingCard({ ending }: { ending: 'C' | 'E' }) {
   </div>
 }
 
-export default function OpeningSequence({ fromSave = false }: { fromSave?: boolean }) {
+export default function OpeningSequence({ fromSave = false, voiceLanguage }: { fromSave?: boolean, voiceLanguage: PodLanguage }) {
   const t = useTranslations()
+  const subtitle = usePodSubtitle('opening', voiceLanguage)
   const [scene, setScene] = useState<Scene>(fromSave ? 'battle' : skipCards ? 'ending' : 'credits')
   const [cue, setCue] = useState<Cue>('lead')
   const setOverlay = useOverlayStore(state => state.setShowOverlay)
@@ -67,22 +70,26 @@ export default function OpeningSequence({ fromSave = false }: { fromSave?: boole
     if (!voice || typeof cue !== 'number' || (scene !== 'credits' && scene !== 'battle')) return
     let timer: number
     const next = cue === 32 ? () => setOverlay('titleScreenOverlay', false) : advance
+    const timedReport = cue <= reportDurations.length
+    const earliest = performance.now() + (timedReport ? reportDurations[cue - 1] : 0)
     function schedule(delay: number) {
       if (question) return
       window.clearTimeout(timer)
-      timer = window.setTimeout(next, delay)
+      timer = window.setTimeout(next, Math.max(delay, earliest - performance.now()))
     }
-    const timedReport = cue <= 7
-    schedule(timedReport ? reportDurations[cue - 1] : voice.duration + 1600)
-    const stopVoice = playPodVoice(voice.src, timedReport ? {} : {
-      onPlaying: () => schedule(voice.duration + 600),
-      onEnded: () => schedule(220),
+    const fallback = () => schedule(voice.duration[voiceLanguage] + (timedReport ? 0 : 1600))
+    fallback()
+    const stopVoice = playPodVoice(voiceLanguage, voice.file, {
+      onPlaying: () => window.clearTimeout(timer),
+      onWaiting: fallback,
+      onError: fallback,
+      onEnded: () => schedule(timedReport ? 0 : 220),
     })
     return () => {
       window.clearTimeout(timer)
       stopVoice()
     }
-  }, [cue, scene, voice, question, advance, setOverlay])
+  }, [cue, scene, voice, voiceLanguage, question, advance, setOverlay])
 
   useEffect(() => {
     if (scene === 'declined') {
@@ -124,9 +131,9 @@ export default function OpeningSequence({ fromSave = false }: { fromSave?: boole
   }
 
   if (scene === 'battle') {
-    return cue === 32 && <p className={styles.radio} role="status">{t('opening.32')}</p>
+    return cue === 32 && <p className={styles.radio} role="status">{subtitle(cue)}</p>
   }
-  const line = cue === 'request' || typeof cue === 'number' ? t('opening.' + cue) : ''
+  const line = cue === 'request' || typeof cue === 'number' ? subtitle(cue) : ''
   return (
     <GameDialog className={styles.opening} data-opening={scene} aria-label={line || 'NieR:Automata'}>
       <OpeningCredits frozen={frozen} noise={noise} />

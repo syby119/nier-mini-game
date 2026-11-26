@@ -1,3 +1,4 @@
+import type { PodLanguage } from '@/features/audio/podLanguage'
 import MainTitleOverlay from '@/features/cover/MainTitleOverlay'
 import DeveloperStagePicker from '@/features/developer/DeveloperStagePicker'
 import { readStagePreview, startStagePreview } from '@/features/developer/developerStages'
@@ -15,7 +16,7 @@ import PreLoadAssetsOverlay from './PreLoadAssetsOverlay'
 import { useOverlayStore } from './state/OverlayStore'
 import systemInfoStore from './state/SystemInfoStore'
 
-export default function GameOverlays() {
+export default function GameOverlays({ voiceLanguage }: { voiceLanguage: PodLanguage }) {
   const booted = useRef(false)
   const isInitRes = systemInfoStore((state) => state.initRes)
   const screens = useOverlayStore(state => state.isShowOverlay)
@@ -44,13 +45,13 @@ export default function GameOverlays() {
         <NotificationOverlay />
         <GamePauseOverlay />
         {screens.mainTitleOverlay && <MainTitleOverlay />}
-        {screens.titleScreenOverlay && <OpeningSequence fromSave={screens.resumeBattle} />}
+        {screens.titleScreenOverlay && <OpeningSequence fromSave={screens.resumeBattle} voiceLanguage={voiceLanguage} />}
         {screens.continueOverlay && <ContinueOverlay />}
         {screens.scoreTransition && <CutsceneOverlay />}
         {screens.onlineResultOverlay && <ResultOverlay />}
         {screens.playerSummaryOverlay && <PlayerSummaryOverlay />}
-        {screens.requestPlayerInfoOverlay && <FinaleSaveOverlay message />}
-        {screens.requestPlayerInfoPhase3Overlay && <FinaleSaveOverlay />}
+        {screens.requestPlayerInfoOverlay && <FinaleSaveOverlay message voiceLanguage={voiceLanguage} />}
+        {screens.requestPlayerInfoPhase3Overlay && <FinaleSaveOverlay voiceLanguage={voiceLanguage} />}
       </>}
     </div>
   )

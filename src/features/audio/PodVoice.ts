@@ -1,14 +1,18 @@
 import useAudioStore, { setDialogueMusicLevel } from './AudioStore'
 import { getGameAudioContext, rampGain } from './CreditsMusic'
+import type { PodLanguage } from './podLanguage'
 
-const voiceGain = 1.9
 const speaking = new Set<HTMLAudioElement>()
 let restoreTimer: number | undefined
 
-type VoiceEvents = { onPlaying?: () => void, onEnded?: () => void, onError?: () => void }
+type VoiceEvents = { onPlaying?: () => void, onWaiting?: () => void, onEnded?: () => void, onError?: () => void }
 
-export function playPodVoice(src: string, { onPlaying, onEnded, onError }: VoiceEvents = {}) {
-  const audio = new Audio(src)
+export function playPodVoice(language: PodLanguage, file: string, { onPlaying, onWaiting, onEnded, onError }: VoiceEvents = {}) {
+  const root = language === 'ja' ? '/nier/sound/dialogue/ja/' : '/nier/sound/dialogue/'
+  const audio = new Audio(root + file)
+  audio.lang = language
+  // The Japanese masters are a little quieter than the English recordings.
+  const voiceGain = language === 'ja' ? 2.25 : 1.9
   const events = new AbortController()
   const { signal } = events
   const context = typeof AudioContext === 'undefined' ? undefined : getGameAudioContext()
@@ -48,7 +52,7 @@ export function playPodVoice(src: string, { onPlaying, onEnded, onError }: Voice
   audio.addEventListener('playing', () => {
     connectVoice()
     // The ellipsis clips are authored silence with subtitle timing.
-    if (!src.endsWith('_ellipsis.ogg')) {
+    if (!file.endsWith('_ellipsis.ogg')) {
       window.clearTimeout(restoreTimer)
       speaking.add(audio)
       setDialogueMusicLevel(.1, 80)
@@ -60,7 +64,10 @@ export function playPodVoice(src: string, { onPlaying, onEnded, onError }: Voice
     onEnded?.()
   }, { signal })
   audio.addEventListener('pause', releaseMusic, { signal })
-  audio.addEventListener('waiting', releaseMusic, { signal })
+  audio.addEventListener('waiting', () => {
+    releaseMusic()
+    onWaiting?.()
+  }, { signal })
   audio.addEventListener('error', failed, { signal })
   void audio.play().catch(failed)
 
