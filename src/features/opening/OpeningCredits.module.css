@@ -124,95 +124,21 @@
   justify-self: start;
 }
 
-.roll [data-ink] {
-  position: relative;
-  display: inline-block;
+.roll [data-credit] {
   white-space: nowrap;
 }
 
-.field {
-  --tear-size: 5;
-  --tear-ink: .55;
-  --tear-delay: 0s;
-}
-
-.field[data-noise="onset"] {
-  --tear-delay: 3.2s;
-}
-
-.field[data-noise="strong"] {
-  --tear-size: 20;
-  --tear-ink: .95;
-}
-
-.department > * {
-  --slice: 24%;
-  --second-slice: 38%;
-  --phase: -.09s;
-}
-
-.department > :nth-child(3n) {
-  --slice: 60%;
-  --second-slice: 18%;
-  --phase: -.23s;
-}
-
-.department > :nth-child(3n + 1) {
-  --slice: 42%;
-  --second-slice: 72%;
-  --phase: -.04s;
-}
-
-/* Stretch a narrow sample of the actual ink along its scanlines. Each row
-   keeps its baseline and has undamaged letters between the two samples. */
-
-.field:not([data-noise="clean"]) [data-ink]:not(:empty)::before,
-.field:not([data-noise="clean"]) [data-ink]:not(:empty)::after {
-  --sample: calc(var(--slice) + var(--wander, 0%));
-  --sliver: .38em;
-  --band-top: 28%;
-  --band-bottom: 34%;
-  content: attr(data-ink) / '';
+.signal {
   position: absolute;
-  inset: 0;
-  opacity: 0;
-  background: var(--field);
-  text-shadow: .04em 0 .05em currentColor;
-  clip-path: inset(var(--band-top) calc(100% - var(--sample) - var(--sliver)) var(--band-bottom) var(--sample));
-  mask-image: linear-gradient(90deg, transparent var(--sample), black calc(var(--sample) + .05em),
-    black calc(var(--sample) + .29em), transparent calc(var(--sample) + var(--sliver)));
-  transform-origin: var(--sample) center;
-  animation: inkTear .91s steps(1, end) calc(var(--tear-delay) + var(--phase)) infinite;
+  top: 0;
+  left: calc(50% - 192 * var(--unit));
+  width: calc(416 * var(--unit));
+  height: 100%;
+  pointer-events: none;
 }
 
-.field:not([data-noise="clean"]) [data-ink]:not(:empty)::after {
-  --slice: var(--second-slice);
-  --band-top: 43%;
-  --band-bottom: 25%;
-  transform-origin: calc(var(--sample) + var(--sliver)) center;
-  animation-duration: .73s;
-  animation-delay: calc(var(--tear-delay) + var(--phase) - .34s);
-}
-
-@keyframes inkTear {
-  0%, 7%, 24%, 36%, 64%, 86%, 100% {
-    opacity: 0;
-  }
-  12%, 46%, 91% {
-    --wander: 9%;
-    opacity: var(--tear-ink);
-    transform: scaleX(calc(var(--tear-size) * .45));
-  }
-  18%, 53%, 72% {
-    --wander: -5%;
-    opacity: var(--tear-ink);
-    transform: scaleX(var(--tear-size));
-  }
-  59%, 79% {
-    --wander: 4%;
-    opacity: calc(var(--tear-ink) * .7);
-    transform: scaleX(calc(var(--tear-size) * .72));
-  }
+.roll [data-sampled] {
+  opacity: var(--live-ink, 0);
 }
 
 .opening[data-opening="declined"] {
@@ -241,7 +167,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .field [data-ink]::before, .field [data-ink]::after {
+  .signal {
     display: none;
   }
   .opening[data-opening="ending"] .field {

@@ -1,5 +1,6 @@
 import { englishAdditional, englishCast, japaneseEnsemble, japaneseLeads, type VoiceCredit } from '@/features/credits/VoiceCredits'
 import { useLayoutEffect, useRef } from 'react'
+import { CreditSignal, type CreditMotion, type CreditNoise } from './CreditSignal'
 import styles from './OpeningCredits.module.css'
 
 type Staff = string | [role: string, name: string]
@@ -55,21 +56,18 @@ function StaffList() {
   return <div className={styles.staff}>
     {sections.map(([heading, staff]) => (
       <section className={styles.department} key={heading}>
-        <h2><span data-ink={heading}>{heading}</span></h2>
+        <h2 data-credit={heading}>{heading}</h2>
         {staff.map(person => {
-          if (typeof person === 'string') return <div className={styles.center} key={person}><span data-ink={person}>{person}</span></div>
+          if (typeof person === 'string') return <div className={styles.center} key={person} data-credit={person}>{person}</div>
           const [role, name] = person
-          return <div className={styles.row} key={name}>
-            <small data-ink={role}>{role}</small><span data-ink={name}>{name}</span>
+          return <div className={styles.row} key={name} data-credit={name}>
+            <small>{role}</small><span>{name}</span>
           </div>
         })}
       </section>
     ))}
   </div>
 }
-
-type CreditMotion = 'roll' | 'hold' | 'rewind'
-type CreditNoise = 'clean' | 'onset' | 'weak' | 'strong'
 
 export default function OpeningCredits({ motion, noise }: { motion: CreditMotion, noise: CreditNoise }) {
   const strip = useRef<HTMLDivElement>(null)
@@ -97,5 +95,6 @@ export default function OpeningCredits({ motion, noise }: { motion: CreditMotion
 
   return <div className={styles.field} data-noise={noise}>
     <div className={styles.roll} ref={strip}><StaffList /></div>
+    <CreditSignal strip={strip} motion={motion} noise={noise} endInset={endInset} rollSpeed={rollSpeed} />
   </div>
 }
