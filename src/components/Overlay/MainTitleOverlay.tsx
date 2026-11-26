@@ -5,6 +5,7 @@ import { animated, useSpring } from '@react-spring/web'
 import systemInfoStore from '../../store/SystemInfoStore'
 import { useTranslations } from 'next-intl'
 import useAudioStore from '../../store/AudioStore'
+import { prepareCreditsMusic } from '../../store/CreditsMusic'
 import { GamepadManager } from '../../modules/GamepadManager'
 import { useDetectGPU } from '@react-three/drei'
 import { useOverlayStore } from '../../store/OverlayStore'
@@ -53,6 +54,7 @@ export default function MainTitleOverlay() {
     if (isButtonClickedRef.current) return
 
     isButtonClickedRef.current = true
+    prepareCreditsMusic()
     playAudio('buttonClick')
     api.start({
       from: { mainTitle: 1 },

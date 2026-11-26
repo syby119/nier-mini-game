@@ -1,80 +1,159 @@
-import { Howl } from 'howler'
+const beat = 60 / 74
+const bar = 4 * beat
 
-// These sections share the same tempo. The recording keeps the music running
-// through retries and brings in the choir on the current musical phrase.
-const phrase = 25.945
-const choirStart = 188
-const loopLength = phrase * 3
-let track: Howl | undefined
-let playing: number | undefined
-let choir = false
+// Cues in ending-e-credits.mp3, aligned to the downbeat in the finale recording.
+const choirDownbeat = 188.73
+const soloLoop = { start: choirDownbeat - 33 * bar, end: choirDownbeat }
+const choirLoop = { start: choirDownbeat, end: choirDownbeat + 24 * bar }
+const choirEntry = choirDownbeat + 16 * bar
+type Loop = typeof soloLoop
+
+type Voice = { source: AudioBufferSourceNode, gain: GainNode, startedAt: number }
+type Playback = {
+  output: GainNode
+  sources: Set<AudioBufferSourceNode>
+  choir: boolean
+  solo?: Voice
+}
+
+let context: AudioContext | undefined
+let recording: AudioBuffer | undefined
+let loading = false
+let playback: Playback | undefined
 let volume = .3
 
-function getTrack() {
-  if (!track) {
-    track = new Howl({
-      src: ['/nier/sound/music/ending-e-credits.mp3'],
-      html5: true, preload: false, volume,
-      sprite: {
-        opening: [0, choirStart * 1000],
-        solo: [(choirStart - loopLength) * 1000, loopLength * 1000, true],
-        choir: [choirStart * 1000, loopLength * 1000, true],
-      },
-    })
-    const music = track
-    music.on('playerror', id => {
-      music.once('unlock', () => { if (playing === id) music.play(id) })
-    })
-  }
-  return track
+function wrap(position: number, loop: Loop) {
+  const length = loop.end - loop.start
+  return loop.start + ((position - loop.start) % length + length) % length
 }
 
-export function startCreditsMusic() {
-  if (playing !== undefined) return
-  const music = getTrack()
-  if (music.state() === 'unloaded') music.load()
-  choir = false
-  const opening = music.play('opening')
-  playing = opening
-  music.volume(volume, opening)
-  music.once('end', () => {
-    if (playing === opening) {
-      playing = music.play('solo')
-      music.volume(volume, playing)
+function blendLoopTail(buffer: AudioBuffer, loop: Loop) {
+  const start = Math.round(loop.start * buffer.sampleRate)
+  const end = Math.round(loop.end * buffer.sampleRate)
+  const count = Math.round(.08 * buffer.sampleRate)
+  // Blend into the audio immediately BEFORE the incoming beat to keep the full loop length.
+  for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
+    const samples = buffer.getChannelData(ch)
+    for (let i = 0; i < count; i++) {
+      const mix = (1 - Math.cos(Math.PI * i / (count - 1))) / 2
+      const tail = end - count + i
+      samples[tail] += mix * (samples[start - count + i] - samples[tail])
     }
-  }, opening)
+  }
 }
 
-export function joinCreditsChoir() {
-  if (choir) return
-  const music = getTrack()
-  const previous = playing
-  const current = previous === undefined ? 0 : Number(music.seek(previous))
-  const offset = ((current - choirStart) % phrase + phrase) % phrase
-  if (previous !== undefined) fadeOut(music, previous, 1000)
-  const id = music.play('choir')
-  playing = id
-  choir = true
-  music.volume(0, id)
-  music.once('seek', () => { if (playing === id && volume > 0) music.fade(0, volume, 1000, id) }, id)
-  music.seek(choirStart + offset, id)
+async function loadRecording(audio: AudioContext) {
+  const response = await fetch('/nier/sound/music/ending-e-credits.mp3')
+  if (!response.ok) throw new Error(`Credits music: HTTP ${response.status}`)
+  const buffer = await audio.decodeAudioData(await response.arrayBuffer())
+  // The choir's incoming pre-roll shares the solo tail. Read it before editing that tail.
+  blendLoopTail(buffer, choirLoop)
+  blendLoopTail(buffer, soloLoop)
+  return buffer
 }
 
-function fadeOut(music: Howl, id: number, duration: number) {
-  const level = Number(music.volume(id))
-  if (!level) { music.stop(id); return }
-  music.once('fade', () => music.stop(id), id)
-  music.fade(level, 0, duration, id)
+function playLoop(run: Playback, buffer: AudioBuffer, loop: Loop, offset: number, when: number, level: number): Voice {
+  const audio = run.output.context
+  const source = audio.createBufferSource()
+  source.buffer = buffer
+  source.loop = true
+  source.loopStart = Math.round(loop.start * buffer.sampleRate) / buffer.sampleRate
+  source.loopEnd = Math.round(loop.end * buffer.sampleRate) / buffer.sampleRate
+  const gain = audio.createGain()
+  gain.gain.value = level
+  source.connect(gain).connect(run.output)
+  run.sources.add(source)
+  source.onended = () => {
+    source.disconnect()
+    gain.disconnect()
+    run.sources.delete(source)
+    if (run.sources.size === 0) run.output.disconnect()
+  }
+  source.start(when, offset)
+  return { source, gain, startedAt: when }
 }
+
+function syncPlayback() {
+  const run = playback
+  if (!context || context.state !== 'running' || !recording) return
+  removeUnlockListeners()
+  if (!run) return
+  const now = context.currentTime
+  if (run.sources.size === 0) {
+    if (run.choir) playLoop(run, recording, choirLoop, choirEntry, now, 1)
+    else run.solo = playLoop(run, recording, soloLoop, 0, now, 1)
+    return
+  }
+  const solo = run.solo
+  if (!run.choir || !solo) return
+
+  // Schedule both voices on the same beat, including after any number of solo loops.
+  const elapsed = now + .02 - solo.startedAt
+  const nextBeat = soloLoop.start + Math.ceil((elapsed - soloLoop.start) / beat) * beat
+  const when = solo.startedAt + nextBeat
+  const position = nextBeat < soloLoop.end ? nextBeat : wrap(nextBeat, soloLoop)
+  const offset = wrap(choirEntry + position - soloLoop.start, choirLoop)
+  const incoming = playLoop(run, recording, choirLoop, offset, when, 0)
+  const fadeEnd = when + beat / 2
+  incoming.gain.gain.setValueAtTime(0, when)
+  incoming.gain.gain.linearRampToValueAtTime(1, fadeEnd)
+  solo.gain.gain.setValueAtTime(1, when)
+  solo.gain.gain.linearRampToValueAtTime(0, fadeEnd)
+  solo.source.stop(fadeEnd)
+  run.solo = undefined
+}
+
+function removeUnlockListeners() {
+  window.removeEventListener('pointerup', prepareCreditsMusic)
+  window.removeEventListener('keydown', prepareCreditsMusic)
+}
+
+export function prepareCreditsMusic() {
+  const audio = context ??= new AudioContext()
+  if (audio.state !== 'running' || !recording) {
+    window.addEventListener('pointerup', prepareCreditsMusic)
+    window.addEventListener('keydown', prepareCreditsMusic)
+  }
+  if (audio.state !== 'running') void audio.resume().then(syncPlayback, () => {})
+  if (!recording && !loading) {
+    loading = true
+    void loadRecording(audio).then(buffer => {
+      recording = buffer
+      syncPlayback()
+    }).catch(error => console.warn('Could not load credits music', error)).finally(() => { loading = false })
+  }
+  syncPlayback()
+}
+
+function requestMusic(choir: boolean) {
+  const audio = context ??= new AudioContext()
+  if (!playback) {
+    const output = audio.createGain()
+    output.gain.value = volume
+    output.connect(audio.destination)
+    playback = { output, sources: new Set(), choir }
+  }
+  if (choir) playback.choir = true
+  prepareCreditsMusic()
+}
+
+export function startCreditsMusic() { requestMusic(false) }
+export function joinCreditsChoir() { requestMusic(true) }
 
 export function stopCreditsMusic() {
-  const id = playing
-  playing = undefined
-  choir = false
-  if (track && id !== undefined) fadeOut(track, id, 650)
+  const run = playback
+  playback = undefined
+  removeUnlockListeners()
+  if (!run) return
+  const now = run.output.context.currentTime
+  const end = now + .65
+  run.output.gain.setValueAtTime(run.output.gain.value, now)
+  run.output.gain.linearRampToValueAtTime(0, end)
+  run.sources.forEach(source => source.stop(end))
+  if (!run.sources.size) run.output.disconnect()
 }
 
 export function setCreditsVolume(next: number) {
   volume = next
-  if (track && playing !== undefined) track.volume(next, playing)
+  if (playback) playback.output.gain.value = next
 }
