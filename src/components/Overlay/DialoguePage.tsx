@@ -8,6 +8,7 @@ interface DialogueProps {
   line: string
   duration: number
   choices?: readonly [string, string]
+  onConfirmStart?: (index: number) => void
   onConfirm: (index: number) => void
   onChangeDisplay?: () => void
 }
@@ -21,7 +22,7 @@ function padKeys({ buttons, axes }: GamepadState) {
   }
 }
 
-export default function DialoguePage({ line, duration, choices, onConfirm, onChangeDisplay }: DialogueProps) {
+export default function DialoguePage({ line, duration, choices, onConfirmStart, onConfirm, onChangeDisplay }: DialogueProps) {
   const t = useTranslations()
   const [length, setLength] = useState(0)
   const [ready, setReady] = useState(false)
@@ -56,9 +57,10 @@ export default function DialoguePage({ line, duration, choices, onConfirm, onCha
     confirmed.current = true
     setSelected(index)
     setConfirming(true)
+    onConfirmStart?.(index)
     useAudioStore.getState().play('buttonClick')
     timer.current = window.setTimeout(() => onConfirm(index), notice ? 50 : 300)
-  }, [ready, notice, onConfirm])
+  }, [ready, notice, onConfirmStart, onConfirm])
 
   useEffect(() => {
     function move(direction: number) {

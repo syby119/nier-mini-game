@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import PubSub from 'pubsub-js'
-import { joinCreditsChoir, stopCreditsMusic } from '../../store/CreditsMusic'
+import { joinCreditsChoir, prepareRescueRefrain, stopCreditsMusic } from '../../store/CreditsMusic'
 import { useNetworkStore } from '../../store/NetworkStore'
 import { useOverlayStore } from '../../store/OverlayStore'
 import usePlayerStore from '../../store/PlayerStore'
@@ -61,7 +61,6 @@ export default function ContinueOverlay() {
           setShowOverlay('mainTitleOverlay', true)
         } else {
           const hasHelp = outcome.current === 'rescue'
-          if (hasHelp) joinCreditsChoir()
           player.updatePlayerInfo({ needOtherPlayerHelp: hasHelp })
           player.respawnPlayer()
           system.setCurrentPhase(system.importantPhaseRecord || '0')
@@ -83,6 +82,8 @@ export default function ContinueOverlay() {
     if (stage === 'question' && index === 0) {
       const player = usePlayerStore.getState()
       player.setPlayerShareInfo({ retryCount: player.playerShareInfo.retryCount + 1 })
+      // By the rescue prompt the recording is already on the refrain, with its lead vocal alone.
+      if (deathCount >= questions.length - 1) prepareRescueRefrain()
       if (deathCount > questions.length && !player.playerInfo.needOtherPlayerHelp) {
         setRescuer(useNetworkStore.getState().notEnablePlayerNameList[0] || 'Honoka(honoka_rey)')
         setStage('offer')
@@ -116,6 +117,7 @@ export default function ContinueOverlay() {
       </div>}
       {isDialogue &&
         <DialoguePage key={stage} line={line} duration={duration} onConfirm={answer}
+          onConfirmStart={stage === 'accept' ? index => { if (index === 0) joinCreditsChoir() } : undefined}
           choices={stage === 'offer' ? undefined : stage === 'accept' ? [t('yes'), t('no')] : [t('no'), t('yes')]}
           onChangeDisplay={hasMessages ? () => setShowMessages(value => !value) : undefined} />
       }
