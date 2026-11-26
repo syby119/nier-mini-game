@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
+import { runScore } from '../../lib/profileSaves'
 import { PixelArtUser } from '../PixelArtUser'
 import { useNetworkStore } from '../../store/NetworkStore'
 import { useOverlayStore } from '../../store/OverlayStore'
@@ -16,19 +17,20 @@ export default function OnlineResultOverlay() {
 
   useEffect(() => {
     const controller = new AbortController()
-    fetch('/api/getOnlineResult', { signal: controller.signal })
+    fetch('/api/getOnlineResult' + (run.profileId ? '?profileId=' + encodeURIComponent(run.profileId) : ''), { signal: controller.signal })
       .then(async response => {
         if (!response.ok) return
         const { data } = await response.json()
         if (Array.isArray(data) && !controller.signal.aborted) setOnline(data)
       }).catch(() => {})
     return () => controller.abort()
-  }, [])
+  }, [run.profileId])
 
+  const score = runScore(run)
   const rows = useMemo(() => [
     ...online.map(({ name, score }) => ({ name, score, own: false })),
-    { name: run.name, score: run.points, own: true },
-  ].sort((a, b) => b.score - a.score), [online, run.name, run.points])
+    { name: run.name, score, own: true },
+  ].sort((a, b) => b.score - a.score), [online, run.name, score])
 
   useEffect(() => { me.current?.scrollIntoView({ block: 'nearest' }) }, [rows])
   useEffect(() => {

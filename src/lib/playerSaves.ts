@@ -6,6 +6,7 @@ export interface RunStats {
   playerTime: number
   deathCount: number
   retryCount: number
+  enemiesDefeated?: number
   shootCount: number
   shootHitCount: number
   onHitCount: number
@@ -24,6 +25,14 @@ interface PlayerSave {
 }
 
 const directory = process.env.NIER_SAVE_DIR || path.join(process.cwd(), '.nier-saves')
+// Each browser profile has its own opaque server credential. The original cookie still
+// identifies an imported single-slot save and older clients.
+export function saveCookieName(profileId: unknown): string | null {
+  if (profileId === undefined || profileId === 'legacy') return 'id'
+  if (typeof profileId !== 'string' || !/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(profileId)) return null
+  return 'nier-slot-' + profileId
+}
+
 const writes = new Map<string, Promise<unknown>>()
 
 async function collection() {

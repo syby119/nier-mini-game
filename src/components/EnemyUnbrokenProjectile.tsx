@@ -151,7 +151,7 @@ void main() {
             }
         })
     }
-    const isPausedSubscribe = useGamePauseStore.subscribe(state => state.isPaused, handleSubscribePausedProjectile);
+    useEffect(() => useGamePauseStore.subscribe(state => state.isPaused, handleSubscribePausedProjectile), [])
 
     useEffect(() => {
         if (enemyUnbrokenInstancesMeshRef.current) {

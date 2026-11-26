@@ -1,32 +1,23 @@
-import React, { useContext, useEffect, useRef, useState } from 'react';
-import usePlayerStore from '../store/PlayerStore';
-import systemInfoStore from '../store/SystemInfoStore';
-import { useFixedFrameUpdate } from '../hook/useFixedFrameUpdate';
+import { useRef } from 'react'
+import { useFrame } from '@react-three/fiber'
+import usePlayerStore from '../store/PlayerStore'
+import systemInfoStore from '../store/SystemInfoStore'
+import useGamePauseStore from '../store/GamePauseStore'
 
 export default function PlayTimerCounter() {
-    const gameStarted = systemInfoStore(state => state.gameStarted);
-    const currentPhase = systemInfoStore(state => state.systemInfo.currentPhase);
-    const setPlayerShareInfo = usePlayerStore(state => state.setPlayerShareInfo)
-    const timer = useRef<number>(0);
-
-
-    useEffect(() => {
-        if (!gameStarted) timer.current = 0
-    }, [gameStarted])
-
-    useFixedFrameUpdate((state, delta) => {
-        if (gameStarted) {
-            timer.current += delta;
-        }
-    })
-
-    useEffect(() => {
-        if (currentPhase == 'end') {
-            setPlayerShareInfo({ playerTime: timer.current });
-        }
-    }, [currentPhase])
-
-    return (
-        <></>
-    );
+  const remainder = useRef(0)
+  useFrame((_, delta) => {
+    const { gameStarted, systemInfo } = systemInfoStore.getState()
+    if (!gameStarted) { remainder.current = 0; return }
+    const player = usePlayerStore.getState()
+    if (systemInfo.currentPhase === 'end' || player.playerInfo.playerHealth <= 0 ||
+      useGamePauseStore.getState().isPaused || document.hidden) return
+    remainder.current += Math.min(delta, 1)
+    const seconds = Math.floor(remainder.current)
+    if (seconds) {
+      remainder.current -= seconds
+      player.setPlayerShareInfo({ playerTime: player.playerShareInfo.playerTime + seconds })
+    }
+  })
+  return null
 }

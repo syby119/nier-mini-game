@@ -10,7 +10,8 @@ const gamepadManager = new GamepadManager();
 export default function GamePauseSystem() {
     const [sub, get] = useKeyboardControls()
     const togglePause = () => {
-        if (!systemInfoStore.getState().gameStarted) return
+        const system = systemInfoStore.getState()
+        if (!system.gameStarted || system.systemInfo.currentPhase === 'end') return
         const overlays = useOverlayStore.getState().isShowOverlay
         if (!overlays.continueOverlay && !overlays.requestPlayerInfoOverlay && !overlays.requestPlayerInfoPhase3Overlay) {
             useGamePauseStore.getState().togglePause()

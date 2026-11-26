@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import systemInfoStore from "./SystemInfoStore";
 import * as THREE from 'three';
 import { v4 as uuidv4 } from 'uuid';
 import PubSub from 'pubsub-js'
@@ -37,11 +38,16 @@ interface IPlayerStore {
     resetPlayerShareInfo: () => void;
     updatePlayerInfo: (updates: Partial<IPlayerInfo>) => void;
     setPlayerToDeath: () => void;
+    addCombatStats: (delta: Partial<Record<CombatCounter, number>>) => void;
     respawnPlayer: () => void;
     setPlayerShareInfo: (newShareInfo: Partial<IPlayerShareInfo>) => void;
 }
 
+type CombatCounter = 'points' | 'enemiesDefeated' | 'shootCount' | 'shootHitCount' | 'onHitCount'
+
 interface IPlayerShareInfo {
+    profileId?: string;
+    enemiesDefeated: number;
     name: string;
     content: string;
     region: string;
@@ -65,6 +71,7 @@ const initShareValue: IPlayerShareInfo = {
     content: "",
     region: "",
     points: 0,
+    enemiesDefeated: 0,
     playerTime: 0,
     deathCount: 0,
     shootCount: 0,
@@ -130,6 +137,16 @@ const usePlayerStore = create<IPlayerStore>()(
             set((state) => ({
                 playerInfo: { ...state.playerInfo, playerHealth: 3 },
             }));
+        },
+
+        addCombatStats: (delta) => {
+            const system = systemInfoStore.getState();
+            if (!system.gameStarted || system.systemInfo.currentPhase === 'end') return;
+            set(state => {
+                const stats = { ...state.playerShareInfo };
+                for (const key of Object.keys(delta) as CombatCounter[]) stats[key] += delta[key]!;
+                return { playerShareInfo: stats };
+            });
         },
 
         setPlayerShareInfo: (newShareInfo: Partial<IPlayerShareInfo>) => {

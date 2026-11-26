@@ -1,4 +1,3 @@
-import { keepEndingSave } from '../../lib/endingSave'
 import usePlayerStore from '../../store/PlayerStore'
 import { useContext, useState } from "react"
 import { INieRButtonsConfigs, NieRCustomBox } from "./NieRCustomBox"
@@ -27,13 +26,13 @@ export default function RequestPlayerInfoPhase2Overlay() {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
+                    profileId: usePlayerStore.getState().playerShareInfo.profileId,
                     content: formValue.content,
                     region: formValue.region
                 })
             })
             if (!req.ok) throw new Error(String(req.status))
             usePlayerStore.getState().setPlayerShareInfo(formValue)
-            keepEndingSave(usePlayerStore.getState().playerShareInfo)
             setStartCloseAnimation(true)
             setTimeout(() => {
                 setShowOverlay('requestPlayerInfoPhase2Overlay', false)

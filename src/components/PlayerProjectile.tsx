@@ -2,7 +2,6 @@ import { RapierRigidBody, vec3, InstancedRigidBodyProps, InstancedRigidBodies, i
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import usePlayerStore, { IProjectile } from '../store/PlayerStore';
 import * as THREE from 'three';
-import systemInfoStore from '../store/SystemInfoStore';
 import { useFixedFrameUpdate } from '../hook/useFixedFrameUpdate';
 
 // Keep complete volleys in flight across the visible arena, even from opposite corners.
@@ -19,13 +18,7 @@ export default function PlayerProjectile() {
         minY: -1,
         maxY: -100
     }
-    const playerProjectileSummaries = useRef<{
-        totalHit: number,
-    }>({
-        totalHit: 0,
-    })
-    const currentPhase = systemInfoStore(state => state.systemInfo.currentPhase)
-    const setPlayerShareInfo = usePlayerStore(state => state.setPlayerShareInfo)
+    const addCombatStats = usePlayerStore(state => state.addCombatStats)
 
     const playerInstances = useMemo(() => {
         const instances: InstancedRigidBodyProps[] = [];
@@ -63,7 +56,7 @@ export default function PlayerProjectile() {
     }
 
     const onHit = (manifold: any, target: CollisionTarget, other: CollisionTarget) => {
-        playerProjectileSummaries.current.totalHit++
+        addCombatStats({ shootHitCount: 1 })
         const hitPosition = target.rigidBody?.translation()
         if (other?.rigidBodyObject?.userData.type == 'enemy_normal_projectile') {
             PubSub.publish('startHitExpandingRingBoundaryAnimation', { position: hitPosition })
@@ -121,13 +114,6 @@ export default function PlayerProjectile() {
         }
     }, [])
 
-    useEffect(() => {
-        if (currentPhase === "end") {
-            setPlayerShareInfo({
-                shootHitCount: playerProjectileSummaries.current.totalHit
-            })
-        }
-    }, [currentPhase])
 
 
     return (

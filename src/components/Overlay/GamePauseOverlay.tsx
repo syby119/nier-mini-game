@@ -1,11 +1,14 @@
 import { animated, useSpring } from '@react-spring/web';
 import React, { useEffect, useRef, useState } from 'react'
-import { GamepadManager } from '../../modules/GamepadManager';
+import { useTranslations } from 'next-intl'
+import { returnToCover } from '../../lib/battleSession'
 import useGamePauseStore from '../../store/GamePauseStore';
 import useAudioStore from '../../store/AudioStore';
 
 const AnimatedDiv = animated('div');
 export default function GamePauseOverlay() {
+    const t = useTranslations('saves')
+    const isPaused = useGamePauseStore(state => state.isPaused)
     const opacityValueRef = useRef<number>(0)
     const [styles, api] = useSpring(() => ({
         from: { opacity: opacityValueRef.current },
@@ -41,8 +44,9 @@ export default function GamePauseOverlay() {
     ), [])
 
     return (
-        <AnimatedDiv className='w-screen h-screen bg-[#2e2c27] pointer-events-auto z-10 absolute' style={{
+        <AnimatedDiv className='w-screen h-screen bg-[#2e2c27] z-10 absolute' inert={!isPaused} style={{
             opacity: styles.opacity,
+            pointerEvents: isPaused ? 'auto' : 'none',
             display: styles.opacity.to((opacity) => opacity === 0 ? 'none' : 'flex')
         }}>
             <div className='container mx-auto flex items-center justify-center h-full flex-col'>
@@ -63,6 +67,8 @@ export default function GamePauseOverlay() {
                                 setAllVolume(value)
                             }} />
                     </div>
+                    <button type="button" className="mt-8 cursor-pointer border border-current px-4 py-2 text-base"
+                        onClick={returnToCover}>{t('leaveBattle')}</button>
                 </div>
             </div>
         </AnimatedDiv>

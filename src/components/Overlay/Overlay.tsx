@@ -20,6 +20,7 @@ export default function Overlay() {
     const booted = useRef(false)
     const isInitRes = systemInfoStore((state) => state.initRes);
     const isShowMainScreen = useOverlayStore((state) => state.isShowOverlay.mainTitleOverlay);
+    const isResuming = useOverlayStore(state => state.isShowOverlay.resumeBattle)
     const isShowTitleScreen = useOverlayStore((state) => state.isShowOverlay.titleScreenOverlay);
     const isShowContinueOverlay = useOverlayStore((state) => state.isShowOverlay.continueOverlay);
     const isCutsceneActive = useOverlayStore(state => state.isShowOverlay.scoreTransition);
@@ -53,7 +54,7 @@ export default function Overlay() {
                 <NotificationOverlay />
                 <GamePauseOverlay />
                 {isShowMainScreen && <MainTitleOverlay />}
-                {isShowTitleScreen && <StartTitleOverlay />}
+                {isShowTitleScreen && <StartTitleOverlay fromSave={isResuming} />}
                 {isShowContinueOverlay && <ContinueOverlay />}
                 {isCutsceneActive && <CutsceneOverlay />}
                 {isShowOnlineResultOverlay && <ResultOverlay />}

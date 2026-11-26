@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
+import { startShooting } from '../../lib/battleSession'
 import { openingVoices } from '../../data/OpeningDialogue'
 import { startCreditsMusic, stopCreditsMusic } from '../../store/CreditsMusic'
 import { playPodVoice } from '../../store/PodVoice'
 import { useOverlayStore } from '../../store/OverlayStore'
 import usePlayerStore from '../../store/PlayerStore'
-import systemInfoStore from '../../store/SystemInfoStore'
 import DialoguePage from './DialoguePage'
 import GameDialog from './GameDialog'
 import OpeningCredits from './OpeningCredits'
@@ -25,9 +25,9 @@ function EndingCard({ ending }: { ending: 'C' | 'E' }) {
   </div>
 }
 
-export default function StartTitleOverlay() {
+export default function StartTitleOverlay({ fromSave = false }: { fromSave?: boolean }) {
   const t = useTranslations()
-  const [scene, setScene] = useState<Scene>(skipCards ? 'ending' : 'credits')
+  const [scene, setScene] = useState<Scene>(fromSave ? 'battle' : skipCards ? 'ending' : 'credits')
   const [cue, setCue] = useState<Cue>('lead')
   const setOverlay = useOverlayStore(state => state.setShowOverlay)
   const inDeathDialogue = useOverlayStore(state => state.isShowOverlay.continueOverlay)
@@ -95,9 +95,7 @@ export default function StartTitleOverlay() {
     if (scene !== 'ending') return
     const music = window.setTimeout(() => startCreditsMusic(), skipCards ? 0 : 3650)
     const launch = window.setTimeout(() => {
-      const system = systemInfoStore.getState()
-      system.updateSystemInfo({ titleScreenShowed: true, currentPhase: '0' })
-      system.setGameStarted(true)
+      startShooting()
       setCue('lead')
       setScene('battle')
     }, skipCards ? 0 : 17100)

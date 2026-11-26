@@ -605,9 +605,14 @@ export const Enemy = ({
         }
     }, [cuboidSize, spawnDelayReady()])
 
-    useEffect(() => useGamePauseStore.subscribe(
-        state => state.isPaused, subCheckSpawnTime
-    ), [])
+    useEffect(() => {
+        const unsubscribe = useGamePauseStore.subscribe(state => state.isPaused, subCheckSpawnTime)
+        const timer = tempTimerRef.current
+        return () => {
+            unsubscribe()
+            clearTimeout(timer.timer)
+        }
+    }, [])
 
     useFixedFrameUpdate((state, delta) => {
         tempTimerRef.current.accumulativeTime += delta

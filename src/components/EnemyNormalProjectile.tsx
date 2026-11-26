@@ -137,7 +137,7 @@ void main() {
             }
         })
     }
-    const isPausedSubscribe = useGamePauseStore.subscribe(state => state.isPaused, handleSubscribePausedProjectile);
+    useEffect(() => useGamePauseStore.subscribe(state => state.isPaused, handleSubscribePausedProjectile), [])
 
     const enemyInstances = useMemo(() => {
         const instances: InstancedRigidBodyProps[] = [];

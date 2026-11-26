@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { EndingSave, keepEndingSave } from '../../lib/endingSave'
+import { removeDonatedProfile, runScore } from '../../lib/profileSaves'
+import type { EndingSave } from '../../lib/endingSave'
 import GameDialog from './GameDialog'
 import DialoguePage from './DialoguePage'
 import styles from './FinaleSaveOverlay.module.css'
@@ -24,7 +25,7 @@ export default function SaveTransfer({ run, onComplete, onKeep }: TransferProps)
           headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(run) })
         if (!res.ok || (await res.json()).uploaded !== true) throw new Error('Upload incomplete')
         if (!controller.signal.aborted) {
-          keepEndingSave(null)
+          if (run.profileId) removeDonatedProfile(run.profileId)
           setTransfer('confirmed')
         }
       } catch {
@@ -46,7 +47,7 @@ export default function SaveTransfer({ run, onComplete, onKeep }: TransferProps)
 
   const sections = ['records', 'battle', 'messages', 'slots']
   const rows = [
-    [[t('score'), run.points], [t('time'), Math.floor(run.playerTime / 60) + ':' + String(Math.floor(run.playerTime % 60)).padStart(2, '0')], [t('reTryCount'), run.retryCount]],
+    [[t('score'), runScore(run)], [t('time'), Math.floor(run.playerTime / 60) + ':' + String(Math.floor(run.playerTime % 60)).padStart(2, '0')], [t('reTryCount'), run.retryCount]],
     [[t('shootCount'), run.shootCount], [t('shootHitCount'), run.shootHitCount], [t('onHitCount'), run.onHitCount]],
     [[t('message'), run.content || '—'], [t('region'), run.region || '—']],
     [[run.name, 'Ending E'], [t('finale.empty'), ''], [t('finale.empty'), '']],

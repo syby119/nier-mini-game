@@ -52,10 +52,9 @@ export const Player = ({ showHitControls }: { showHitControls: boolean }) => {
     // console.log('Player')
     const addNotification = useNotificationStore(state => state.addNotification);
     const setShowOverlay = useOverlayStore(state => state.setShowOverlay);
-    const currentPhase = systemInfoStore(state => state.systemInfo.currentPhase);
     const spawnZ = systemInfoStore(state => state.playerSpawnZ);
     const playerInfo = usePlayerStore(state => state.playerInfo);
-    const setPlayerShareInfo = usePlayerStore(state => state.setPlayerShareInfo)
+    const addCombatStats = usePlayerStore(state => state.addCombatStats)
     const setPlayerHealth = usePlayerStore(state => state.setPlayerHealth)
     const setPlayerToDeath = usePlayerStore(state => state.setPlayerToDeath)
     const player = useRef<any>(null);
@@ -91,13 +90,6 @@ export const Player = ({ showHitControls }: { showHitControls: boolean }) => {
     const [shootingInterval, setShootingInterval] = useState<number>(0.0986)
     const disableMove = useRef<boolean>(false)
     const resetPlayerPositionRef = useRef<boolean>(false)
-    const playerLocalSummery = useRef<{
-        onHitCount: number,
-        totalShootCount: number,
-    }>({
-        onHitCount: 0,
-        totalShootCount: 0,
-    })
     const { play: playAudio, setVolume, stop: stopAudio } = useAudioStore();
     const t = useTranslations()
     const isPaused = useGamePauseStore(state => state.isPaused)
@@ -149,7 +141,7 @@ export const Player = ({ showHitControls }: { showHitControls: boolean }) => {
     };
 
     const shootVolley = (center: THREE.Vector3, heading: number, support: SupportFormation | null, age: number) => {
-        playerLocalSummery.current.totalShootCount += 1
+        addCombatStats({ shootCount: 1 })
         const direction = vec3().set(Math.sin(heading), 0, Math.cos(heading))
         const modelAxis = vec3().set(1, 0, 0)
         const projectileRotation = quat().setFromUnitVectors(modelAxis, direction)
@@ -351,7 +343,8 @@ export const Player = ({ showHitControls }: { showHitControls: boolean }) => {
 
     const onHit = () => {
         const { playerHealth, needOtherPlayerHelp } = usePlayerStore.getState().playerInfo
-        if (playerHealth <= 0 || isPlayerOnHit.current || useGamePauseStore.getState().isPaused) return
+        if (playerHealth <= 0 || isPlayerOnHit.current || useGamePauseStore.getState().isPaused ||
+            systemInfoStore.getState().systemInfo.currentPhase === 'end') return
         const loss = needOtherPlayerHelp ? formation.current?.sacrificeWingman() : undefined
         if (needOtherPlayerHelp && !loss) return
         isPlayerOnHit.current = true
@@ -370,7 +363,7 @@ export const Player = ({ showHitControls }: { showHitControls: boolean }) => {
 
         const position = vec3(rb.current?.translation())
         setPlayerHealth(playerHealth - 1)
-        playerLocalSummery.current.onHitCount += 1
+        addCombatStats({ onHitCount: 1 })
         if (playerHealth === 1) {
             playerNodes.Center.visible = false
             playerNodes.Header.visible = false
@@ -446,15 +439,6 @@ export const Player = ({ showHitControls }: { showHitControls: boolean }) => {
             PubSub.unsubscribe(setPlayerVisibleModelToken)
         }
     }, [])
-
-    useEffect(() => {
-        if (currentPhase === "end") {
-            setPlayerShareInfo({
-                shootCount: playerLocalSummery.current.totalShootCount,
-                onHitCount: playerLocalSummery.current.onHitCount
-            })
-        }
-    }, [currentPhase])
 
     const resetPlayerVelocity = () => {
         if (rb.current) {

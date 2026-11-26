@@ -1,22 +1,35 @@
 import type usePlayerStore from '../store/PlayerStore'
 
 export type EndingSave = ReturnType<typeof usePlayerStore.getState>['playerShareInfo']
-const activeKey = 'nier.endingSave'
 const pendingKey = 'nier.pendingSaveDonation'
 
-function persist(key: string, run: EndingSave | null) {
-  try {
-    if (run) localStorage.setItem(key, JSON.stringify(run))
-    else localStorage.removeItem(key)
-  } catch { /* Private browsing can limit storage. The run also lives in the player store. */ }
+function keyFor(profileId?: string) {
+  return profileId && profileId !== 'legacy' ? pendingKey + '.' + profileId : pendingKey
 }
 
-export function keepEndingSave(run: EndingSave | null) { persist(activeKey, run) }
-export function rememberDonation(run: EndingSave | null) { persist(pendingKey, run) }
+export function rememberDonation(run: EndingSave) {
+  try { localStorage.setItem(keyFor(run.profileId), JSON.stringify(run)) }
+  catch { /* The current transfer can still complete in this tab. */ }
+}
 
-export function pendingDonation(): EndingSave | null {
+export function forgetDonation(run: EndingSave) {
+  try { localStorage.removeItem(keyFor(run.profileId)) }
+  catch { /* Retrying an acknowledged transfer is idempotent. */ }
+}
+
+export function pendingDonation(profileId?: string): EndingSave | null {
   try {
-    const value = JSON.parse(localStorage.getItem(pendingKey) || 'null')
-    return value && typeof value.name === 'string' && typeof value.points === 'number' ? value : null
-  } catch { return null }
+    const keys = profileId ? [keyFor(profileId)] : Object.keys(localStorage)
+      .filter(key => key === pendingKey || key.startsWith(pendingKey + '.'))
+    for (const key of keys) {
+      let value
+      try { value = JSON.parse(localStorage.getItem(key) || 'null') } catch { continue }
+      if (value && typeof value.name === 'string' && typeof value.points === 'number') {
+        // Pending uploads saved by the single-slot game use its original server cookie.
+        if (!value.profileId && localStorage.getItem('nier.endingSave')) value.profileId = 'legacy'
+        return value
+      }
+    }
+  } catch { /* No recoverable transfer. */ }
+  return null
 }

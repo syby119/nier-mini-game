@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
+import { finishBattle } from '../lib/battleSession'
 import { Enemy } from './Enemy'
 import { EnemyData, EnemyProps } from '../data/EnemyData'
 import usePlayerStore from '../store/PlayerStore';
@@ -13,12 +14,11 @@ export const EnemySystem = React.memo(() => {
     const setImportantPhaseRecord = systemInfoStore(state => state.setImportantPhaseRecord);
     const setCurrentPhase = systemInfoStore(state => state.setCurrentPhase);
     const setOverlay = useOverlayStore(state => state.setShowOverlay);
-    const setPlayerShareInfo = usePlayerStore(state => state.setPlayerShareInfo);
+    const addCombatStats = usePlayerStore(state => state.addCombatStats);
     const updatePlayerInfo = usePlayerStore(state => state.updatePlayerInfo);
     const playerHealth = usePlayerStore(state => state.playerInfo.playerHealth);
     const [enemiesMap, setEnemiesMap] = useState<Map<string, EnemyProps>>(new Map());
     const pendingEnemies = useRef<Set<string>>(new Set());
-    const pointsRef = useRef<number>(0);
     const timersRef = useRef<Set<NodeJS.Timeout>>(new Set());
     const defeatedEnemyIds = useRef<Set<string>>(new Set());
     const { play: playAudio } = useAudioStore();
@@ -85,7 +85,6 @@ export const EnemySystem = React.memo(() => {
     const handleFinalEnemyOnDeath = () => {
         setTimeout(() => {
             setOverlay('scoreTransition', true)
-            setPlayerShareInfo({ points: pointsRef.current });
             updatePlayerInfo({ needOtherPlayerHelp: false })
         }, 3000)
         setTimeout(() => {
@@ -112,10 +111,11 @@ export const EnemySystem = React.memo(() => {
             });
             return
         }
-        pointsRef.current += points;
+        addCombatStats({ points, enemiesDefeated: 1 });
         defeatedEnemyIds.current.add(id);
         playAudio('coreExplode1');
         if (id == "enemy_final") {
+            finishBattle('cleared')
             handleFinalEnemyOnDeath()
         }
         checkPendingEnemies({

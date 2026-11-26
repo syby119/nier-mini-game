@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import PubSub from 'pubsub-js'
-import { joinCreditsChoir, prepareRescueRefrain, stopCreditsMusic } from '../../store/CreditsMusic'
+import { joinCreditsChoir, prepareRescueRefrain } from '../../store/CreditsMusic'
+import { finishBattle, returnToCover } from '../../lib/battleSession'
 import { getRescuePilots, useNetworkStore } from '../../store/NetworkStore'
 import { useOverlayStore } from '../../store/OverlayStore'
 import usePlayerStore from '../../store/PlayerStore'
@@ -54,12 +55,7 @@ export default function ContinueOverlay() {
         const player = usePlayerStore.getState()
         const system = systemInfoStore.getState()
         if (outcome.current === 'giveUp') {
-          stopCreditsMusic()
-          player.resetPlayerInfo()
-          player.resetPlayerShareInfo()
-          system.setGameStarted(false)
-          system.setImportantPhaseRecord('')
-          setShowOverlay('mainTitleOverlay', true)
+          returnToCover()
         } else {
           const hasHelp = outcome.current === 'rescue'
           player.updatePlayerInfo({ needOtherPlayerHelp: hasHelp, rescuePilots: hasHelp ? pilots.current : undefined })
@@ -92,7 +88,10 @@ export default function ContinueOverlay() {
         return
       }
     }
-    if (stage === 'question' && index === 1) outcome.current = 'giveUp'
+    if (stage === 'question' && index === 1) {
+      finishBattle('retired')
+      outcome.current = 'giveUp'
+    }
     if (stage === 'accept' && index === 0) outcome.current = 'rescue'
     setStage('leaving')
   }

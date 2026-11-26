@@ -1,4 +1,4 @@
-import { keepEndingSave, pendingDonation, rememberDonation } from '../../lib/endingSave'
+import { forgetDonation, pendingDonation, rememberDonation } from '../../lib/endingSave'
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { finaleClips, finaleQuestions } from '../../data/FinaleDialogue'
@@ -15,7 +15,7 @@ type Screen = 'dialogue' | 'upload' | 'saving'
 
 export default function FinaleSaveOverlay({ message = false }: { message?: boolean }) {
   const t = useTranslations()
-  const [pending] = useState(pendingDonation)
+  const [pending] = useState(() => pendingDonation(usePlayerStore.getState().playerShareInfo.profileId))
   const [run] = useState(() => pending || usePlayerStore.getState().playerShareInfo)
   const [screen, setScreen] = useState<Screen>(pending ? 'upload' : 'dialogue')
   const [line, setLine] = useState(message ? 41 : 46)
@@ -27,17 +27,16 @@ export default function FinaleSaveOverlay({ message = false }: { message?: boole
   const speaker = clip.includes('and_pod153') ? 'Pod 042 / Pod 153' : clip.includes('pod153') ? 'Pod 153' : 'Pod 042'
 
   const finish = useCallback(() => {
-    rememberDonation(null)
+    forgetDonation(run)
     usePlayerStore.getState().resetPlayerShareInfo()
     usePlayerStore.getState().resetPlayerInfo()
     systemInfoStore.getState().setGameStarted(false)
     setOverlay(overlay, false)
     setOverlay('mainTitleOverlay', true)
-  }, [setOverlay, overlay])
+  }, [setOverlay, overlay, run])
 
   const advance = useCallback(() => {
     if (line === 69) {
-      keepEndingSave(run)
       rememberDonation(run)
       setScreen('upload')
     } else if (line === 79) setScreen('saving')
