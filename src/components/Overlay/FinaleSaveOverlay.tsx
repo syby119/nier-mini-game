@@ -89,12 +89,10 @@ export default function FinaleSaveOverlay({ message = false }: { message?: boole
   return (
     <GameDialog className={styles.finale} data-light={light} data-finale={screen}
       aria-label={screen === 'dialogue' ? text : t('finale.saved')}>
-      {screen === 'dialogue' && <>
-        <div className={styles.speaker}>{speaker}</div>
-        <DialoguePage key={line} line={text} duration={Math.min(1650, Array.from(text).length * 51)}
+      {screen === 'dialogue' &&
+        <DialoguePage key={line} line={text} speaker={speaker} duration={Math.min(1650, Array.from(text).length * 51)}
           onConfirm={answer} choices={line === 45 ? [t('iHaveSomethingIWantToSay'), t('nopeNothingAtAll')] :
-            question ? [t('yes'), t('no')] : undefined} />
-      </>}
+            question ? [t('yes'), t('no')] : undefined} />}
       {screen === 'saving' && <div className={styles.saving} role="status" aria-label={t('finale.saved')}>SAVING<span aria-hidden="true">◇</span></div>}
     </GameDialog>
   )

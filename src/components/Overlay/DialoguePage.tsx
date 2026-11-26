@@ -6,11 +6,13 @@ import styles from './GameDialogue.module.css'
 
 interface DialogueProps {
   line: string
+  speaker?: string
   duration: number
   choices?: readonly [string, string]
   onConfirmStart?: (index: number) => void
   onConfirm: (index: number) => void
   onChangeDisplay?: () => void
+  allowEarlyAdvance?: boolean
 }
 
 function padKeys({ buttons, axes }: GamepadState) {
@@ -22,7 +24,7 @@ function padKeys({ buttons, axes }: GamepadState) {
   }
 }
 
-export default function DialoguePage({ line, duration, choices, onConfirmStart, onConfirm, onChangeDisplay }: DialogueProps) {
+export default function DialoguePage({ line, speaker, duration, choices, onConfirmStart, onConfirm, onChangeDisplay, allowEarlyAdvance = false }: DialogueProps) {
   const t = useTranslations()
   const [length, setLength] = useState(0)
   const [ready, setReady] = useState(false)
@@ -33,6 +35,7 @@ export default function DialoguePage({ line, duration, choices, onConfirmStart, 
   const timer = useRef<number | undefined>(undefined)
   const letters = Array.from(line)
   const notice = !choices
+  const canConfirm = ready || (notice && allowEarlyAdvance)
 
   useEffect(() => {
     root.current?.focus({ preventScroll: true })
@@ -53,14 +56,14 @@ export default function DialoguePage({ line, duration, choices, onConfirmStart, 
   }, [line, letters.length, duration])
 
   const confirm = useCallback((index: number) => {
-    if (!ready || confirmed.current) return
+    if (!canConfirm || confirmed.current) return
     confirmed.current = true
     setSelected(index)
     setConfirming(true)
     onConfirmStart?.(index)
     useAudioStore.getState().play('buttonClick')
     timer.current = window.setTimeout(() => onConfirm(index), notice ? 50 : 300)
-  }, [ready, notice, onConfirmStart, onConfirm])
+  }, [canConfirm, notice, onConfirmStart, onConfirm])
 
   useEffect(() => {
     function move(direction: number) {
@@ -86,6 +89,10 @@ export default function DialoguePage({ line, duration, choices, onConfirmStart, 
     let previous = padKeys(menuGamepad.getState())
     function gamepad(state: GamepadState) {
       const next = padKeys(state)
+      if (!root.current?.closest('dialog')?.contains(document.activeElement)) {
+        previous = next
+        return
+      }
       if (next.up && !previous.up) move(-1)
       if (next.down && !previous.down) move(1)
       if (next.display && !previous.display) onChangeDisplay?.()
@@ -103,11 +110,12 @@ export default function DialoguePage({ line, duration, choices, onConfirmStart, 
   const text = <span className={styles.line} aria-hidden="true">{letters.slice(0, length).join('')}</span>
   return (
     <div className={styles.dialogue} ref={root} tabIndex={-1} data-confirming={confirming}>
+      {speaker && <div className={styles.speaker}>{speaker}</div>}
       <div className={styles.band}>
         <div className={styles.ornament} />
         {notice ? (
           <button type="button" className={styles.advance} aria-label={line + ' ' + t('advanceDialogue')}
-            disabled={!ready} onClick={() => confirm(0)}>{text}</button>
+            disabled={!canConfirm} onClick={() => confirm(0)}>{text}</button>
         ) : text}
       </div>
       {choices && ready && <div className={styles.choices}>

@@ -52,7 +52,7 @@ export default function MainTitleOverlay() {
       onRest: () => {
         updateSystemInfo({ mainOverlayShowed: true })
         setShowOverlay('mainTitleOverlay', false)
-        setTimeout(() => setShowOverlay('titleScreenOverlay', true), 1000)
+        setShowOverlay('titleScreenOverlay', true)
       },
     })
   }, [api, playAudio, setShowOverlay, updateSystemInfo])

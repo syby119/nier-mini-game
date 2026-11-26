@@ -1,10 +1,5 @@
 .finale { background: #1e1d19; }
 .finale[data-light="true"] { background: #edede4; --dialogue-band: linear-gradient(transparent, #96958e 10%); }
-.speaker {
-  position: absolute; bottom: 22%; left: 6%; width: 18%; padding: .25em 1.2em;
-  text-align: right; background: linear-gradient(90deg, transparent, #36352f);
-  color: #deded8; font-size: max(10px, calc(9 * var(--unit))); letter-spacing: .1em;
-}
 .archive {
   position: absolute; inset: 0; padding: 6.7% 6%; color: #48473d;
   background: repeating-linear-gradient(0deg, #bdbba814 0 1px, transparent 1px 3px), radial-gradient(ellipse, #d0cdb5, #c2c0aa 68%, #afad98);

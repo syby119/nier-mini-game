@@ -15,6 +15,7 @@ type Playback = {
   output: GainNode
   sources: Set<AudioBufferSourceNode>
   arrangement: Arrangement
+  offset: number
   solo?: Voice
   choirFader?: AudioParam
 }
@@ -111,7 +112,7 @@ function enterRefrain(run: Playback, score: Score, now: number) {
   let offset = choirEntry
   if (solo) {
     const earliest = now + .02
-    const elapsed = earliest - solo.startedAt
+    const elapsed = earliest - solo.startedAt + run.offset
     const position = elapsed < soloLoop.end ? elapsed : wrap(elapsed, soloLoop)
     const atFirstRefrain = position >= soloLoop.start && position < soloLoop.start + 8 * bar
     const downbeat = position < soloLoop.start || atFirstRefrain ? soloLoop.start : soloLoop.end
@@ -150,7 +151,7 @@ function syncPlayback() {
   if (!run) return
   const now = context.currentTime
   if (!run.sources.size && run.arrangement !== 'choir') {
-    run.solo = playLoop(run, recording.music, soloLoop, 0, now, 1)
+    run.solo = playLoop(run, recording.music, soloLoop, run.offset, now, 1)
   }
   if (run.arrangement === 'solo' || (run.arrangement === 'refrain' && !recording.voices)) return
   if (run.solo || !run.sources.size) enterRefrain(run, recording, now)
@@ -184,20 +185,20 @@ export function prepareCreditsMusic() {
   syncPlayback()
 }
 
-function requestMusic(arrangement: Arrangement) {
+function requestMusic(arrangement: Arrangement, offset = 0) {
   const audio = context ??= new AudioContext()
   if (!playback) {
     const output = audio.createGain()
     output.gain.value = volume
     output.connect(audio.destination)
-    playback = { output, sources: new Set(), arrangement }
+    playback = { output, sources: new Set(), arrangement, offset }
   } else if (arrangement === 'choir' || (arrangement === 'refrain' && playback.arrangement === 'solo')) {
     playback.arrangement = arrangement
   }
   prepareCreditsMusic()
 }
 
-export function startCreditsMusic() { requestMusic('solo') }
+export function startCreditsMusic(offset = 0) { requestMusic('solo', offset) }
 export function prepareRescueRefrain() { if (playback) requestMusic('refrain') }
 export function joinCreditsChoir() { requestMusic('choir') }
 

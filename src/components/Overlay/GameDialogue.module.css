@@ -33,6 +33,11 @@
 @keyframes fadeMessages { to { opacity: 0; } }
 
 .dialogue { position: absolute; inset: 0; outline: none; pointer-events: none; }
+.speaker {
+  position: absolute; bottom: 22%; left: 6%; width: 18%; padding: .25em 1.2em;
+  text-align: right; background: linear-gradient(90deg, transparent, #36352f);
+  color: #deded8; font-size: max(10px, calc(9 * var(--unit))); letter-spacing: .1em;
+}
 .band, .received {
   position: absolute;
   width: 100%;
