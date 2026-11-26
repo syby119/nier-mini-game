@@ -36,7 +36,8 @@ export default function OpeningSequence({ fromSave = false, voiceLanguage }: { f
   const setOverlay = useOverlayStore(state => state.setShowOverlay)
   const inDeathDialogue = useOverlayStore(state => state.isShowOverlay.continueOverlay)
   const frozen = cue === 'contact' || (typeof cue === 'number' && cue >= 8)
-  const noise = cue === 'request' || frozen || (typeof cue === 'number' && cue >= 6)
+  const noise = cue === 'request' || frozen ? 'strong' : cue === 'silence' ? 'onset' :
+    typeof cue === 'number' && cue >= 5 ? 'weak' : 'clean'
   const inCutscene = scene !== 'battle' && !skipCards
   const rollMusic = scene === 'credits' && !frozen
   const voice = typeof cue === 'number' ? openingVoices[cue - 1] : undefined
@@ -146,7 +147,7 @@ export default function OpeningSequence({ fromSave = false, voiceLanguage }: { f
   const line = cue === 'request' || typeof cue === 'number' ? subtitle(cue) : ''
   return (
     <GameDialog className={styles.opening} data-opening={scene} aria-label={line || 'NieR:Automata'}>
-      <OpeningCredits frozen={frozen} noise={noise} />
+      <OpeningCredits motion={scene === 'ending' ? 'rewind' : frozen ? 'hold' : 'roll'} noise={noise} />
       {scene === 'credits' && cue === 'lead' && <EndingCard ending="C" />}
       {scene === 'ending' && <EndingCard ending="E" />}
       {scene === 'credits' && line &&

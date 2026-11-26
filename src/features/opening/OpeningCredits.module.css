@@ -80,34 +80,13 @@
   font-size: calc(9.5 * var(--unit));
   font-weight: 400;
   letter-spacing: .12em;
-  animation: staffRoll var(--roll-period) linear 18.5s both;
-}
-
-.repeat, .staff {
-  display: flex;
-  flex-direction: column-reverse;
-}
-
-.repeat {
-  animation: staffRoll var(--roll-period) linear calc(18.5s + var(--roll-period)) infinite;
 }
 
 .staff {
+  display: flex;
+  flex-direction: column-reverse;
   gap: calc(29 * var(--unit));
   padding-top: calc(29 * var(--unit));
-}
-
-.field[data-frozen="true"] :is(.roll, .repeat) {
-  animation-play-state: paused;
-}
-
-@keyframes staffRoll {
-  from {
-    transform: translateY(0);
-  }
-  to {
-    transform: translateY(50%);
-  }
 }
 
 .department {
@@ -147,68 +126,92 @@
 
 .roll [data-ink] {
   position: relative;
+  display: inline-block;
   white-space: nowrap;
 }
 
-.field[data-noise="true"] [data-ink]::after {
-  content: attr(data-ink);
+.field {
+  --tear-size: 5;
+  --tear-ink: .55;
+  --tear-delay: 0s;
+}
+
+.field[data-noise="onset"] {
+  --tear-delay: 3.2s;
+}
+
+.field[data-noise="strong"] {
+  --tear-size: 20;
+  --tear-ink: .95;
+}
+
+.department > * {
+  --slice: 24%;
+  --second-slice: 38%;
+  --phase: -.09s;
+}
+
+.department > :nth-child(3n) {
+  --slice: 60%;
+  --second-slice: 18%;
+  --phase: -.23s;
+}
+
+.department > :nth-child(3n + 1) {
+  --slice: 42%;
+  --second-slice: 72%;
+  --phase: -.04s;
+}
+
+/* Stretch a narrow sample of the actual ink along its scanlines. Each row
+   keeps its baseline and has undamaged letters between the two samples. */
+
+.field:not([data-noise="clean"]) [data-ink]:not(:empty)::before,
+.field:not([data-noise="clean"]) [data-ink]:not(:empty)::after {
+  --sample: calc(var(--slice) + var(--wander, 0%));
+  --sliver: .38em;
+  --band-top: 28%;
+  --band-bottom: 34%;
+  content: attr(data-ink) / '';
   position: absolute;
   inset: 0;
-  overflow: hidden;
-  clip-path: inset(38% 0 39%);
-  transform-origin: 25% center;
-  animation: dataNoise 1.31s steps(1, end) infinite;
+  opacity: 0;
+  background: var(--field);
+  text-shadow: .04em 0 .05em currentColor;
+  clip-path: inset(var(--band-top) calc(100% - var(--sample) - var(--sliver)) var(--band-bottom) var(--sample));
+  mask-image: linear-gradient(90deg, transparent var(--sample), black calc(var(--sample) + .05em),
+    black calc(var(--sample) + .29em), transparent calc(var(--sample) + var(--sliver)));
+  transform-origin: var(--sample) center;
+  animation: inkTear .91s steps(1, end) calc(var(--tear-delay) + var(--phase)) infinite;
 }
 
-.field .row:nth-child(3n) [data-ink]::after {
-  animation-delay: -.49s;
+.field:not([data-noise="clean"]) [data-ink]:not(:empty)::after {
+  --slice: var(--second-slice);
+  --band-top: 43%;
+  --band-bottom: 25%;
+  transform-origin: calc(var(--sample) + var(--sliver)) center;
+  animation-duration: .73s;
+  animation-delay: calc(var(--tear-delay) + var(--phase) - .34s);
 }
 
-.field .row:nth-child(3n + 1) [data-ink]::after {
-  animation-delay: -.96s;
-}
-
-@keyframes dataNoise {
-  0%, 25%, 72%, 100% {
+@keyframes inkTear {
+  0%, 7%, 24%, 36%, 64%, 86%, 100% {
     opacity: 0;
   }
-  11%, 67% {
-    opacity: .75;
-    transform: translateX(-.7em) scaleX(1.6);
-    filter: blur(.07em);
+  12%, 46%, 91% {
+    --wander: 9%;
+    opacity: var(--tear-ink);
+    transform: scaleX(calc(var(--tear-size) * .45));
   }
-  49%, 88% {
-    opacity: .55;
-    transform: translateX(.65em) scaleX(1.3);
-    filter: blur(.12em);
+  18%, 53%, 72% {
+    --wander: -5%;
+    opacity: var(--tear-ink);
+    transform: scaleX(var(--tear-size));
   }
-}
-
-.opening[data-opening="ending"] .field {
-  animation: loseSignal 1.25s steps(1, end) forwards;
-}
-
-@keyframes loseSignal {
-  0% {
-    opacity: 1;
-  }
-  25% {
-    opacity: .85;
-    transform: translateY(-11%);
-  }
-  42% {
-    transform: translateY(16%);
-  }
-  59% {
-    opacity: .55;
-    transform: translateY(-29%);
-  }
-  77% {
-    opacity: .3;
-    transform: translateY(5%);
-  }
-  100% {
-    opacity: 0;
+  59%, 79% {
+    --wander: 4%;
+    opacity: calc(var(--tear-ink) * .7);
+    transform: scaleX(calc(var(--tear-size) * .72));
   }
 }
 
@@ -238,7 +241,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .field[data-noise="true"] [data-ink]::after {
+  .field [data-ink]::before, .field [data-ink]::after {
     display: none;
   }
   .opening[data-opening="ending"] .field {

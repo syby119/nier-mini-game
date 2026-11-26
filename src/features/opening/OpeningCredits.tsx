@@ -1,5 +1,5 @@
 import { englishAdditional, englishCast, japaneseEnsemble, japaneseLeads, type VoiceCredit } from '@/features/credits/VoiceCredits'
-import type { CSSProperties } from 'react'
+import { useLayoutEffect, useRef } from 'react'
 import styles from './OpeningCredits.module.css'
 
 type Staff = string | [role: string, name: string]
@@ -43,13 +43,16 @@ const sections: [heading: string, staff: Staff[]][] = [
   ]],
 ]
 
-// Heights and speed are in pixels in the 640 × 360 reference frame.
+// Layout distances are in the 640 × 360 reference frame.
 const rollHeight = sections.reduce((height, [, staff]) =>
   height + 29 + 19 * (1 + staff.length) + (staff.length ? 6 : 0), 0)
-const rollStyle = { '--roll-period': (rollHeight / 48.3) + 's' } as CSSProperties
+const rollDelay = 18500
+const rollSpeed = 48.3
+// The data check holds the last programmer at the top edge of the shot.
+const endInset = 40
 
-function StaffList({ repeated = false }: { repeated?: boolean }) {
-  return <div className={styles.staff} aria-hidden={repeated || undefined}>
+function StaffList() {
+  return <div className={styles.staff}>
     {sections.map(([heading, staff]) => (
       <section className={styles.department} key={heading}>
         <h2><span data-ink={heading}>{heading}</span></h2>
@@ -65,10 +68,34 @@ function StaffList({ repeated = false }: { repeated?: boolean }) {
   </div>
 }
 
-export default function OpeningCredits({ frozen, noise }: { frozen: boolean; noise: boolean }) {
-  return <div className={styles.field} data-noise={noise} data-frozen={frozen} style={rollStyle}>
-    <div className={styles.roll}><div className={styles.repeat}>
-      <StaffList /><StaffList repeated />
-    </div></div>
+type CreditMotion = 'roll' | 'hold' | 'rewind'
+type CreditNoise = 'clean' | 'onset' | 'weak' | 'strong'
+
+export default function OpeningCredits({ motion, noise }: { motion: CreditMotion, noise: CreditNoise }) {
+  const strip = useRef<HTMLDivElement>(null)
+  const travel = useRef<Animation | null>(null)
+
+  useLayoutEffect(() => {
+    const animation = strip.current!.animate([
+      { transform: 'translateY(0)' },
+      { transform: `translateY(calc(100% - ${endInset} * var(--unit)))` },
+    ], { delay: rollDelay, duration: (rollHeight - endInset) / rollSpeed * 1000, fill: 'both' })
+    travel.current = animation
+    return () => animation.cancel()
+  }, [])
+
+  useLayoutEffect(() => {
+    const animation = travel.current!
+    if (motion === 'hold') animation.pause()
+    if (motion === 'rewind' && Number(animation.currentTime) > rollDelay &&
+      !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      // In the recording the very same rows go back up at 64–65 px per 30 fps frame.
+      animation.playbackRate = -40
+      animation.play()
+    }
+  }, [motion])
+
+  return <div className={styles.field} data-noise={noise}>
+    <div className={styles.roll} ref={strip}><StaffList /></div>
   </div>
 }
