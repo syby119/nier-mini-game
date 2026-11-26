@@ -1,180 +1,133 @@
-import { Html, useGLTF } from "@react-three/drei";
-import { vec3 } from "@react-three/rapier";
-import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import * as THREE from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
-import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
-import usePlayerStore from "../store/PlayerStore";
-import { useFixedFrameUpdate } from "../hook/useFixedFrameUpdate";
-import { LevaInputs, Schema } from "leva/plugin";
-import { useControls } from "leva";
+import { BallCollider, interactionGroups, type RapierCollider } from '@react-three/rapier'
+import { useControls } from 'leva'
+import { createRef, useImperativeHandle, useMemo, useRef, useState, type Ref, type RefObject } from 'react'
+import * as THREE from 'three'
+import { PlayerShip } from './PlayerShip'
+import { getRescuePilots } from '../store/NetworkStore'
 
+const fullCircle = 2 * Math.PI
+// In the 30 fps finale recording the formation turns about 10 degrees per frame.
+const orbitDegreesPerSecond = 300
+const arrivalTime = 1.1
+const firstWaveSpacing = 1.1
+const replacementDelay = 2.8
+const enemyBullets = interactionGroups(0, [2, 3])
+const noImpulse = interactionGroups(0, [])
 
-const HexagonContainer = () => {
-    const [radius, setRadius] = useState<number>(0.15) // 六边形的半径
-    const { nodes: playerNodes, scene: playerModel } = useGLTF("./nier/player.glb");
-    const hexagonContainerRef = useRef<any>(null);
-    const otherPlayerRefs = useRef<any[]>([]);
-    const destroyOtherPlayerIndexRefs = useRef<number>(0);
-    const [rotationSpeed, setRotationSpeed] = useState<number>(0.0579);
-    const [maxPlayerCount, setMaxPlayerCount] = useState<number>(6);
-    const playerOptions = useCallback(() => {
-        const value: Schema = {
-            helpPlayerCount: {
-                label: "Other Player Count",
-                value: maxPlayerCount,
-                type: LevaInputs.NUMBER,
-                min: 6,
-                max: 60,
-                step: 1,
-                onChange: (v) => {
-                    setMaxPlayerCount(v)
-                }
-            },
-            centerRange: {
-                label: "Center Range",
-                value: radius,
-                min: 0.15,
-                max: 1,
-                onChange: (v) => {
-                    setRadius(v)
-                }
-            },
-            rotationSpeed: {
-                label: "Rotation Speed",
-                value: rotationSpeed,
-                min: 0,
-                max: 0.20,
-                onChange: (v) => {
-                    setRotationSpeed(v)
-                }
-            }
-        }
-        return value
-    }, [])
-    const pPlayer = useControls('Player', playerOptions)
+type WingmanState = 'waiting' | 'incoming' | 'ready'
 
-    const hexagon = useMemo(() => {
-        const shape = new THREE.Shape();
-        for (let i = 0; i < maxPlayerCount; i++) {
-            const angle = (i / maxPlayerCount) * Math.PI * 2;
-            const x = Math.cos(angle) * radius;
-            const y = Math.sin(angle) * radius;
+interface Wingman {
+    state: WingmanState
+    elapsed: number
+    pilot: string
+    origin: THREE.Vector3
+    ship: RefObject<THREE.Group | null>
+    collider: RapierCollider | null
+}
 
-            if (i === 0) {
-                shape.moveTo(x, y); // 第一个顶点
-            } else {
-                shape.lineTo(x, y); // 其他顶点
-            }
-        }
-        shape.closePath(); // 闭合路径
-        return shape;
-    }, [radius, maxPlayerCount])
-
-    const vertices = useMemo(() => {
-        const points = [];
-        for (let i = 0; i < maxPlayerCount; i++) {
-            const angle = (i / maxPlayerCount) * Math.PI * 2; // 每个顶点的角度
-            const x = Math.cos(angle) * radius;
-            const y = Math.sin(angle) * radius;
-            points.push([x, y, 0]); // z 坐标为 0
-        }
-        return points;
-    }, [radius, maxPlayerCount]);
-
-    const clonedModels = useMemo(() => {
-        return vertices.map(() => clone(playerModel));
-    }, [playerModel, vertices]);
-
-    useFixedFrameUpdate((state, delta) => {
-        if (hexagonContainerRef.current) {
-            hexagonContainerRef.current.rotation.z += rotationSpeed;
-            //获取player_rigidbody的旋转方向，并且为每个otherPlayer设置相同的rotation和angle
-            const mainPlayer = hexagonContainerRef.current.parent?.getObjectByName("player_rigidbody_group");
-            if (mainPlayer) {
-                hexagonContainerRef.current.children.forEach((child: any) => {
-                    if (child.name.startsWith("other_player_")) {
-                        // 计算偏差值
-                        const offsetZ = hexagonContainerRef.current.rotation.z;
-
-                        // 应用主玩家的旋转并去除偏差
-                        child.rotation.set(
-                            Math.PI / 2, // 固定 X 轴旋转
-                            mainPlayer.rotation.y - offsetZ, // 主玩家的 Y 轴旋转
-                            mainPlayer.rotation.z // 主玩家的 Z 轴旋转减去偏差值
-                        );
-                    }
-                });
-            }
-            // 如果otherPlayer的位置不是初始位置，更新每个 otherPlayer 的位置
-            otherPlayerRefs.current.forEach((ref: any, index: number) => {
-                if (!vertices[index]) return;
-                const targetPosition = vec3({ x: vertices[index][0], y: vertices[index][1], z: vertices[index][2] });
-                // 如果当前位置与目标位置不同，则缓慢移动过去
-                if (!ref.position.equals(targetPosition) && ref.position.distanceTo(targetPosition) > 0.01) {
-                    // 使用 lerp 插值移动位置，第二个参数是插值速度（范围 0 到 1）
-                    ref.position.lerp(targetPosition, delta * 2);
-                } else {
-                    // 更新user data
-                    if (!ref.userData?.ready) {
-                        ref.userData = {
-                            ready: true
-                        }
-                    }
-                }
-            })
-        }
-    })
-
-    useEffect(() => {
-        // 设置动画效果，先把每个otherPlayer的位置设置到屏幕外
-        otherPlayerRefs.current.forEach((ref: any, index) => {
-            ref.position.set((index + 1) * 3, 0, 0);
-        })
-
-        const updateOtherPlayerPositionToken = PubSub.subscribe('updateOtherPlayerPosition', (msg: any, data: any) => {
-            const index = destroyOtherPlayerIndexRefs.current;
-            otherPlayerRefs.current[index].position.set(5, 0, 0);
-            otherPlayerRefs.current[index].userData = {
-                ready: false
-            }
-            destroyOtherPlayerIndexRefs.current = (index + 1) % maxPlayerCount;
-        })
-
-        return () => {
-            PubSub.unsubscribe(updateOtherPlayerPositionToken);
-        }
-    }, [])
-
-    return (
-        <group rotation={[Math.PI / -2, 0, 0]} ref={hexagonContainerRef} name={"OtherPlayerContainer"}>
-            <mesh>
-                <shapeGeometry args={[hexagon]} />
-                <meshBasicMaterial color="orange" side={THREE.DoubleSide} transparent opacity={0} />
-            </mesh>
-            <>
-                {vertices.map(([x, y, z], index) => (
-                    <group key={index} position={[x, y, z]} name={"other_player_" + index} ref={(ref) => {
-                        if (ref) {
-                            // 确保每个 ref 只被赋值一次
-                            otherPlayerRefs.current[index] = ref;
-                        }
-                    }}>
-                        <primitive object={clonedModels[index]} />
-                    </group>
-                ))}
-            </>
-        </group>
-    );
-};
-
-export default function OtherPlayerContainer() {
-    const playerInfo = usePlayerStore(state => state.playerInfo);
-
-    if (!playerInfo.needOtherPlayerHelp) {
-        return <></>
+function nextPilot(roster: string[], start: number, wingmen: Wingman[]) {
+    for (let i = 0; i < roster.length; i++) {
+        const pilot = roster[(start + i) % roster.length]
+        if (!wingmen.some(wingman => wingman.state !== 'waiting' && wingman.pilot === pilot)) return pilot
     }
+    return roster[start % roster.length]
+}
+
+export interface SupportFormation {
+    update(delta: number, center: THREE.Vector3Like, heading: number, width: number, height: number): void
+    forEachReady(visit: (position: THREE.Vector3) => void): void
+    takeHit(collider: RapierCollider | undefined, allowCoreHit: boolean): { position: THREE.Vector3, pilot: string } | undefined
+}
+
+export default function OtherPlayerContainer({ ref, pilots }: { ref: Ref<SupportFormation>, pilots?: string[] }) {
+    const [roster] = useState(() => pilots ?? getRescuePilots())
+    const { helpPlayerCount, centerRange, rotationSpeed } = useControls('Player', {
+        helpPlayerCount: { label: 'Other Player Count', value: 6, min: 6, max: 60, step: 1 },
+        centerRange: { label: 'Center Range', value: 0.15, min: 0.15, max: 1, step: 0.01 },
+        rotationSpeed: { label: 'Rotation Speed (°/s)', value: orbitDegreesPerSecond, min: 0, max: 690, step: 1 },
+    })
+    const wingmen = useMemo(() => Array.from({ length: helpPlayerCount }, (_, i): Wingman => ({
+        state: 'waiting',
+        elapsed: -firstWaveSpacing * i,
+        pilot: '',
+        origin: new THREE.Vector3(),
+        ship: createRef<THREE.Group>(),
+        collider: null,
+    })), [helpPlayerCount])
+    const phase = useRef(0)
+    const arrivals = useRef(0)
+
+    useImperativeHandle(ref, () => ({
+        update(delta, center, heading, width, height) {
+            phase.current = (phase.current - THREE.MathUtils.degToRad(rotationSpeed) * delta) % fullCircle
+            wingmen.forEach((wingman, index) => {
+                const ship = wingman.ship.current
+                if (!ship || !wingman.collider) return
+                const angle = phase.current + fullCircle * index / wingmen.length
+                ship.position.set(centerRange * Math.cos(angle), 0, centerRange * Math.sin(angle))
+                ship.rotation.y = heading
+
+                if (wingman.state !== 'ready') {
+                    wingman.elapsed += delta
+                    if (wingman.elapsed < 0) return
+                    if (wingman.state === 'waiting') {
+                        // Approach from a fixed point outside the frame, even if the player moves.
+                        const entryAngle = Math.PI / 2 + arrivals.current * Math.PI * (3 - Math.sqrt(5))
+                        const x = Math.cos(entryAngle)
+                        const z = Math.sin(entryAngle)
+                        const distance = Math.min((width / 2 + 0.12) / Math.abs(x), (height / 2 + 0.12) / Math.abs(z))
+                        wingman.origin.set(x * distance, 0, z * distance)
+                        wingman.pilot = nextPilot(roster, arrivals.current, wingmen)
+                        arrivals.current++
+                        wingman.state = 'incoming'
+                        ship.visible = true
+                    }
+                    const t = Math.min(1, wingman.elapsed / arrivalTime)
+                    ship.position.lerp({
+                        x: wingman.origin.x - center.x, y: 0, z: wingman.origin.z - center.z,
+                    }, (1 - t) ** 2)
+                    if (t < 1) return
+                    wingman.state = 'ready'
+                    wingman.collider.setEnabled(true)
+                }
+                wingman.collider.setTranslationWrtParent(ship.position)
+            })
+        },
+        forEachReady(visit) {
+            for (const wingman of wingmen) {
+                if (wingman.state === 'ready' && wingman.ship.current) {
+                    visit(wingman.ship.current.getWorldPosition(new THREE.Vector3()))
+                }
+            }
+        },
+        takeHit(collider, allowCoreHit) {
+            // A direct hit takes this ship. A hit to the core is absorbed by a ship already in formation.
+            const struck = collider && wingmen.find(wingman => wingman.collider?.handle === collider.handle)
+            if (!struck && !allowCoreHit) return
+            const wingman = struck ?? wingmen.find(wingman => wingman.state === 'ready')
+            const ship = wingman?.ship.current
+            if (!wingman || !ship || wingman.state !== 'ready') return
+            const position = ship.getWorldPosition(new THREE.Vector3())
+            wingman.state = 'waiting'
+            wingman.elapsed = -replacementDelay
+            ship.visible = false
+            wingman.collider?.setEnabled(false)
+            return { position, pilot: wingman.pilot }
+        },
+    }), [wingmen, roster, centerRange, rotationSpeed])
+
     return (
-        <HexagonContainer />
+        <group name="OtherPlayerContainer">
+            {wingmen.map((wingman, i) => (
+                <group key={helpPlayerCount + '-' + i} ref={wingman.ship} name={'other_player_' + i} visible={false}>
+                    <PlayerShip />
+                    <BallCollider name={'support_collider_' + i} args={[0.044]} density={0}
+                        collisionGroups={enemyBullets} solverGroups={noImpulse} ref={collider => {
+                            wingman.collider = collider
+                            collider?.setEnabled(wingman.state === 'ready')
+                        }} />
+                </group>
+            ))}
+        </group>
     )
 }

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import PubSub from 'pubsub-js'
 import { joinCreditsChoir, prepareRescueRefrain, stopCreditsMusic } from '../../store/CreditsMusic'
-import { useNetworkStore } from '../../store/NetworkStore'
+import { getRescuePilots, useNetworkStore } from '../../store/NetworkStore'
 import { useOverlayStore } from '../../store/OverlayStore'
 import usePlayerStore from '../../store/PlayerStore'
 import systemInfoStore from '../../store/SystemInfoStore'
@@ -28,6 +28,7 @@ export default function ContinueOverlay() {
   const [stage, setStage] = useState<Stage>('burst')
   const [showMessages, setShowMessages] = useState(true)
   const [rescuer, setRescuer] = useState('')
+  const pilots = useRef<string[]>([])
   const outcome = useRef<Outcome>('retry')
   const setShowOverlay = useOverlayStore(state => state.setShowOverlay)
   const question = questions[(deathCount - 1) % questions.length]
@@ -61,7 +62,7 @@ export default function ContinueOverlay() {
           setShowOverlay('mainTitleOverlay', true)
         } else {
           const hasHelp = outcome.current === 'rescue'
-          player.updatePlayerInfo({ needOtherPlayerHelp: hasHelp })
+          player.updatePlayerInfo({ needOtherPlayerHelp: hasHelp, rescuePilots: hasHelp ? pilots.current : undefined })
           player.respawnPlayer()
           system.setCurrentPhase(system.importantPhaseRecord || '0')
           PubSub.publish('updateSceneEffectCount', hasHelp ? 100 : 30)
@@ -85,6 +86,7 @@ export default function ContinueOverlay() {
       // By the rescue prompt the recording is already on the refrain, with its lead vocal alone.
       if (deathCount >= questions.length - 1) prepareRescueRefrain()
       if (deathCount > questions.length && !player.playerInfo.needOtherPlayerHelp) {
+        pilots.current = getRescuePilots()
         setRescuer(useNetworkStore.getState().notEnablePlayerNameList[0] || 'Honoka(honoka_rey)')
         setStage('offer')
         return

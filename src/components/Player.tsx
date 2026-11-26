@@ -1,12 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useThree } from '@react-three/fiber'
-import { Html, useGLTF, useKeyboardControls } from '@react-three/drei';
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
-import { BallCollider, CollisionTarget, interactionGroups, quat, RapierRigidBody, RigidBody, vec3 } from '@react-three/rapier';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useGraph } from '@react-three/fiber'
+import { Html, useKeyboardControls } from '@react-three/drei';
+import { playerShipScale, usePlayerShip } from './PlayerShip';
+import { BallCollider, CollisionTarget, interactionGroups, quat, RapierRigidBody, RigidBody, useBeforePhysicsStep, vec3 } from '@react-three/rapier';
 import * as THREE from 'three';
 import PubSub from 'pubsub-js';
 import { PlayerOnHitExpandingRingEffect } from './PlayerOnHitEffects';
-import OtherPlayerContainer from './OtherPlayerContainer';
+import OtherPlayerContainer, { type SupportFormation } from './OtherPlayerContainer';
 import { GamepadManager } from '../modules/GamepadManager';
 import usePlayerStore from '../store/PlayerStore';
 import systemInfoStore from '../store/SystemInfoStore';
@@ -16,7 +16,6 @@ import { useTranslations } from 'next-intl';
 import { useFixedFrameUpdate } from '../hook/useFixedFrameUpdate';
 import { useNotificationStore } from '../store/NotificationStore';
 import { useOverlayStore } from '../store/OverlayStore';
-import { useNetworkStore } from '../store/NetworkStore';
 import { useControls } from 'leva';
 import { Schema } from 'leva/plugin';
 import useGamePauseStore from '../store/GamePauseStore';
@@ -44,24 +43,36 @@ const lerpAngle = (start: number, end: number, t: number) => {
 
 const gamepadManager = new GamepadManager(0.3);
 
-export const Player = () => {
+export const Player = ({ showHitControls }: { showHitControls: boolean }) => {
     // console.log('Player')
     const addNotification = useNotificationStore(state => state.addNotification);
     const setShowOverlay = useOverlayStore(state => state.setShowOverlay);
     const currentPhase = systemInfoStore(state => state.systemInfo.currentPhase);
-    const notEnablePlayerNameList = useNetworkStore(state => state.notEnablePlayerNameList);
-    const { scene } = useThree();
     const playerInfo = usePlayerStore(state => state.playerInfo);
     const setPlayerShareInfo = usePlayerStore(state => state.setPlayerShareInfo)
     const setPlayerHealth = usePlayerStore(state => state.setPlayerHealth)
     const setPlayerToDeath = usePlayerStore(state => state.setPlayerToDeath)
     const player = useRef<any>(null);
     const rb = useRef<RapierRigidBody>(null);
+    const formation = useRef<SupportFormation>(null);
+    const absorbedProjectiles = useRef(new Set<number>())
+    useBeforePhysicsStep(() => absorbedProjectiles.current.clear())
     const playerRotationTarget = useRef<any>(0);
     const rotationTarget = useRef<any>(0);
     const [, get] = useKeyboardControls();
     const [speed, setSpeed] = useState<number>(0.6);
-    const { nodes: playerNodes, scene: playerModel } = useGLTF("./nier/player.glb");
+    const playerModel = usePlayerShip()
+    const { nodes: playerNodes } = useGraph(playerModel)
+    const playerHeader = playerNodes.Header as THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>
+    const healthyMaterial = useMemo(() => playerHeader.material, [playerHeader])
+    useLayoutEffect(() => {
+        // Only the player's header changes color on damage.
+        playerHeader.material = healthyMaterial.clone()
+        return () => {
+            playerHeader.material.dispose()
+            playerHeader.material = healthyMaterial
+        }
+    }, [playerHeader, healthyMaterial])
     const effectStartPosition = useRef<THREE.Vector3>(vec3({ x: 0, y: 0, z: 0 }));
     const effectTargetPosition = useRef<THREE.Vector3>(vec3({ x: 0, y: 0, z: 0 }));
     const isClicking = useRef<boolean>(false);
@@ -158,30 +169,11 @@ export const Player = () => {
         // 合并两个旋转
         projectileRotation.multiply(additionalRotation);
 
-        const position = rb.current?.translation();
-        PubSub.publish('shootProjectile', {
-            id: Math.random(),
-            position: vec3(position),
-            direction,
-            projectileRotation,
-        });
-
-        if (playerInfo.needOtherPlayerHelp) {
-            const otherPlayerContainer = scene.getObjectByName('OtherPlayerContainer')
-            otherPlayerContainer?.children.forEach((child: any) => {
-                if (child.name.startsWith("other_player_")) {
-                    if (child.userData?.ready) {
-                        const worldPosition = child.getWorldPosition(vec3())
-                        PubSub.publish('shootProjectile', {
-                            id: Math.random(),
-                            position: worldPosition,
-                            direction,
-                            projectileRotation,
-                        });
-                    }
-                }
-            })
+        const fireFrom = (position: THREE.Vector3) => {
+            PubSub.publish('shootProjectile', { id: Math.random(), position, direction, projectileRotation })
         }
+        fireFrom(vec3(rb.current?.translation()))
+        formation.current?.forEachReady(fireFrom)
     }
 
     const lastShotTime = useRef(0); // 用于存储上次射击时间
@@ -335,10 +327,9 @@ export const Player = () => {
 
             if (playerOnHitColorReturnNormal.current) {
                 //如果玩家被击中后，颜色变黑色，在useFrame内逐渐恢复颜色
-                const header: any = playerNodes['Header']
-                const headerColor = header.material.color
+                const headerColor = playerHeader.material.color
                 if (headerColor.r < 0.5 && headerColor.g < 0.5 && headerColor.b < 0.5) {
-                    header.material.color.set(headerColor.r + 0.002, headerColor.g + 0.002, headerColor.b + 0.002)
+                    headerColor.setRGB(headerColor.r + 0.002, headerColor.g + 0.002, headerColor.b + 0.002)
                 } else {
                     playerOnHitColorReturnNormal.current = false
                 }
@@ -356,107 +347,69 @@ export const Player = () => {
                 }
             }
 
-            const otherPlayerContainer = state.scene.getObjectByName('OtherPlayerContainer')
-            if (otherPlayerContainer) {
-                const rbTr = rb.current.translation()
-                otherPlayerContainer?.position.copy(vec3(rbTr))
-            }
+            formation.current?.update(delta, rbTranslation, player.current.rotation.y, state.viewport.width, state.viewport.height)
         }
     })
 
-    const handlePlayerOnHitChangeColor = () => {
-        const header: any = playerNodes['Header']
-        header.material.color.set(0, 0, 0)
+    const onHit = (target: CollisionTarget | undefined, other: CollisionTarget) => {
+        const { playerHealth, needOtherPlayerHelp } = usePlayerStore.getState().playerInfo
+        const projectile = other.rigidBodyObject?.userData.type
+        if (playerHealth <= 0 || useGamePauseStore.getState().isPaused) return
+        if (projectile !== 'enemy_normal_projectile' && projectile !== 'enemy_unbroken_projectile') return
+        if (target?.colliderObject?.name === 'player_on_hit_expanding_ring_hit_box') return
+
+        if (!needOtherPlayerHelp && isPlayerOnHit.current) return
+        // One projectile can contact more than one collider during a physics step.
+        const projectileHandle = other.rigidBody?.handle
+        if (projectileHandle !== undefined && absorbedProjectiles.current.has(projectileHandle)) return
+        const loss = needOtherPlayerHelp ? formation.current?.takeHit(target?.collider, !isPlayerOnHit.current) : undefined
+        if (needOtherPlayerHelp && !loss) return
+        if (loss && projectileHandle !== undefined) absorbedProjectiles.current.add(projectileHandle)
+        isPlayerOnHit.current = true
+        playerInvincibilityTimeAccumulatedTime.current = 0
+        setPlayerOnHitExpandingRingHitBoxSize(0)
+        if (gamepadManager.isVibrationSupported()) gamepadManager.vibrate(500, 0.7, 0.6)
+        PubSub.publish('startOnHitCameraEffect', {})
+
+        if (loss) {
+            playAudio('playerExplode')
+            PubSub.publish('startPlayerDeathEffect', { position: loss.position })
+            PubSub.publish('playerOnHitEffect', { position: loss.position })
+            addNotification(`${t('hasLost')}${loss.pilot}${t("'sData")}`)
+            return
+        }
+
+        const position = vec3(rb.current?.translation())
+        setPlayerHealth(playerHealth - 1)
+        playerLocalSummery.current.onHitCount += 1
+        if (playerHealth === 1) {
+            playerNodes.Center.visible = false
+            playerNodes.Header.visible = false
+            PubSub.publish('startPlayerDeathEffect', { position })
+            playAudio('playerExplode')
+            isPlayerOnHit.current = false
+            disableMove.current = true
+            rb.current?.setEnabled(false)
+            setPlayerToDeath()
+            setShowOverlay('continueOverlay', true)
+            return
+        }
+
+        const side = playerHealth === 3 ? 'L' : 'R'
+        playerNodes[side + '_MOMO_1'].visible = false
+        playerNodes[side + '_ASHI'].visible = false
+        PubSub.publish('playerOnHitEffect', { position })
+        playAudio('playerHit')
+        playerHeader.material.color.set(0, 0, 0)
         playerOnHitColorReturnNormal.current = true
     }
 
-    const handleNeedOtherPlayerOnHit = (rbTr: any) => {
-        //通知容器
-        PubSub.publish('updateOtherPlayerPosition')
-        //audio
-        playAudio('playerExplode')
-        //effect
-        PubSub.publish('startPlayerDeathEffect', {
-            position: vec3(rbTr)
-        })
-        PubSub.publish('playerOnHitEffect', {
-            position: vec3(rbTr)
-        })
-        PubSub.publish('startOnHitCameraEffect', {})
-        //add notification
-        let playerName = 'player'
-        if (notEnablePlayerNameList.length > 0) {
-            const randomIndex = Math.floor(Math.random() * notEnablePlayerNameList.length)
-            playerName = notEnablePlayerNameList[randomIndex]
-        }
-        addNotification(`${t('hasLost')}${playerName}${t("'sData")}`,)
-    }
-
-    const onHit = ((target: CollisionTarget, other: CollisionTarget) => {
-        if (usePlayerStore.getState().playerInfo.playerHealth <= 0) return
-        //如果玩家在无敌时间内，不受伤
-        if (other.rigidBodyObject?.userData.type === 'enemy_normal_projectile' ||
-            other.rigidBodyObject?.userData.type === 'enemy_unbroken_projectile'
-        ) {
-            isPlayerOnHit.current = true
-            //还在无敌时间内，不受伤
-            if (playerInvincibilityTimeAccumulatedTime.current < playerInvincibilityTime) {
-                //如果是第一次被击中，生成特效
-                if (playerInvincibilityTimeAccumulatedTime.current == 0) {
-                    //手柄震动
-                    if (gamepadManager.isVibrationSupported()) {
-                        gamepadManager.vibrate(500, 0.7, 0.6)
-                    }
-                    const rbTr = rb.current?.translation()
-                    //如果处于需要其他玩家帮助的状态，不受伤
-                    if (playerInfo.needOtherPlayerHelp) {
-                        handleNeedOtherPlayerOnHit(rbTr)
-                        return
-                    }
-                    //正常受伤
-                    setPlayerHealth(playerInfo.playerHealth - 1)
-
-                    playerLocalSummery.current.onHitCount += 1
-                    //隐藏部位
-                    if (playerInfo.playerHealth == 3) {
-                        playerNodes['L_MOMO_1'].visible = false
-                        playerNodes['L_ASHI'].visible = false
-                        PubSub.publish('playerOnHitEffect', {
-                            position: vec3(rbTr)
-                        })
-                        playAudio('playerHit')
-                    }
-                    else if (playerInfo.playerHealth == 2) {
-                        playerNodes['R_MOMO_1'].visible = false
-                        playerNodes['R_ASHI'].visible = false
-                        PubSub.publish('playerOnHitEffect', {
-                            position: vec3(rbTr)
-                        })
-                        playAudio('playerHit')
-                    }
-                    else if (playerInfo.playerHealth == 1) {
-                        playerNodes['Center'].visible = false
-                        playerNodes['Header'].visible = false
-                        PubSub.publish('startPlayerDeathEffect', {
-                            position: vec3(rbTr)
-                        })
-                        PubSub.publish('startOnHitCameraEffect', {})
-                        playAudio('playerExplode')
-                        isPlayerOnHit.current = false
-                        disableMove.current = true
-                        rb.current?.setEnabled(false)
-                        setPlayerToDeath()
-                        setShowOverlay('continueOverlay', true)
-                        return
-                    }
-                    PubSub.publish('startOnHitCameraEffect', {})
-                    handlePlayerOnHitChangeColor()
-                }
-            }
-        }
-    })
-
     const resetPlayerModel = () => {
+        playerHeader.material.color.copy(healthyMaterial.color)
+        playerOnHitColorReturnNormal.current = false
+        isPlayerOnHit.current = false
+        playerInvincibilityTimeAccumulatedTime.current = 0
+        setPlayerOnHitExpandingRingHitBoxSize(0)
         playerNodes['L_MOMO_1'].visible = true
         playerNodes['L_ASHI'].visible = true
         playerNodes['R_MOMO_1'].visible = true
@@ -536,12 +489,12 @@ export const Player = () => {
                 collisionGroups={interactionGroups(0, [100, 1, 2, 3])}
                 colliders={false}
                 userData={{ type: 'player' }}
-                onCollisionEnter={({ manifold, target, other }) => {
+                onCollisionEnter={({ target, other }) => {
                     onHit(target, other)
                 }}
             >
                 <group ref={player} position={[0, 0, 0]} name='player_rigidbody_group'>
-                    <primitive object={playerModel} scale={[2, 3, 2]} />
+                    <primitive object={playerModel} scale={playerShipScale} />
                     <BallCollider
                         collisionGroups={interactionGroups(0, [100, 1, 2, 3])}
                         name="player_collider"
@@ -554,9 +507,9 @@ export const Player = () => {
                         args={[playerOnHitExpandingRingHitBoxSize]} // 动态调整球体碰撞体的半径
                     />
                     <PlayerOnHitExpandingRingEffect />
-                    {process.env.NODE_ENV == "development" && <Html>
+                    {process.env.NODE_ENV === 'development' && showHitControls && <Html>
                         <button className="text-white top-5 absolute" onClick={() => {
-                            onHit(undefined as any, { rigidBodyObject: { userData: { type: 'enemy_normal_projectile' } } } as any)
+                            onHit(undefined, { rigidBodyObject: { userData: { type: 'enemy_normal_projectile' } } } as any)
                         }}>
                             OnHIt
                         </button>
@@ -567,12 +520,10 @@ export const Player = () => {
                         </button>
                     </Html>}
                 </group>
+                {playerInfo.needOtherPlayerHelp && playerInfo.playerHealth > 0 &&
+                    <OtherPlayerContainer ref={formation} pilots={playerInfo.rescuePilots} />}
             </RigidBody>
             <PlayerMoveEffects />
-            <OtherPlayerContainer />
         </>
     );
 };
-
-
-useGLTF.preload("./nier/player.glb")

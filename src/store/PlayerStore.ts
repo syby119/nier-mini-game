@@ -24,6 +24,7 @@ export interface IEnemyProjectile {
 interface IPlayerInfo {
     playerHealth: number;
     needOtherPlayerHelp: boolean;
+    rescuePilots?: string[];
 }
 
 // 定义 Zustand Store 的接口

@@ -97,7 +97,7 @@ export default function CanvasContainer() {
         <Physics debug={pDebug.hitBoxDebug} timeStep={"vary"}>
           {/* timeStep = vary 是为了避免当前帧率低于设置的值，可能会导致物理更新滞后，影响流畅性 */}
           <AirWall />
-          {gameStarted && <Player />}
+          {gameStarted && <Player showHitControls={pDebug.hitBoxDebug} />}
           {gameStarted && <EnemySystem />}
           {gameStarted && <ProjectileSystem />}
         </Physics>

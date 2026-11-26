@@ -25,6 +25,13 @@ async function readList<T>(url: string): Promise<T[]> {
   return data
 }
 
+// Offline pilot names visible in the finale's rescue and loss messages.
+const recordedPilots = ['Honoka', 'Chrysalis', 'Jared', 'Sirix', 'Ayphos', 'Colton', 'Jan', 'RoksAtlas', 'SYEDAHMEDPS', 'Fbb', 'Bran']
+
+export function getRescuePilots() {
+  return Array.from(new Set([...useNetworkStore.getState().notEnablePlayerNameList, ...recordedPilots]))
+}
+
 export const useNetworkStore = create<NetworkStore>()(
   subscribeWithSelector((set) => {
     let loading = false
