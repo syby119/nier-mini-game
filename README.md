@@ -21,6 +21,24 @@ The project makes extensive use of ChatGPT to generate particle effects and some
 
 ---
 
+## Development
+
+Install dependencies with `pnpm install` and run `pnpm dev`. The game opens at [localhost:3000/zh-hk](http://localhost:3000/zh-hk).
+
+| Path under `src/` | Responsibility |
+| --- | --- |
+| `app/`, `pages/api/` | Next.js pages, locale routing and HTTP endpoints |
+| `game/` | Canvas and overlay composition, shared game state and battle session lifecycle |
+| `features/cover/`, `features/opening/`, `features/rescue/`, `features/ending/` | Title menu, opening credits, retry and rescue, results and save donation |
+| `features/combat/` | Player and support formation, enemies and credit waves, projectiles and hit effects |
+| `features/saves/`, `features/community/` | Browser profiles and run history, pending donations and community data |
+| `features/audio/` | Music cues and loops, sound effects and Pod dialogue mixing |
+| `features/developer/` | Stage picker, stage URLs and debug controls |
+| `shared/` | Reusable UI, gamepad input and Three.js helpers |
+| `server/` | Score and donation persistence for the HTTP handlers |
+
+Run `pnpm format` to format the source, styles and configuration. Use `pnpm format:check`, `pnpm typecheck` and `pnpm build` to verify changes.
+
 ## Developer stage selection
 
 Run `pnpm dev` and press **F2** or click **選關** to choose a stage by ID and credit name. Each jump starts a fresh run at that checkpoint. You can also open or bookmark a stage URL.

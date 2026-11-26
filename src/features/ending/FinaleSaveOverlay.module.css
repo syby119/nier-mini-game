@@ -1,0 +1,119 @@
+.finale {
+  background: #1e1d19;
+}
+
+.finale[data-light="true"] {
+  background: #edede4;
+  --dialogue-band: linear-gradient(transparent, #96958e 10%);
+}
+
+.archive {
+  position: absolute;
+  inset: 0;
+  padding: 6.7% 6%;
+  color: #48473d;
+  background: repeating-linear-gradient(0deg, #bdbba814 0 1px, transparent 1px 3px), radial-gradient(ellipse, #d0cdb5, #c2c0aa 68%, #afad98);
+}
+
+.tabs {
+  position: absolute;
+  top: 3.4%;
+  left: 4%;
+  right: 4%;
+  display: flex;
+  gap: 1%;
+  border-block: 1px solid #8e8c79;
+  padding-block: .35%;
+}
+
+.tabs span {
+  width: 23%;
+  padding: .15em .8em;
+  color: #646253;
+  background: #afad99;
+  font-size: max(9px, calc(8 * var(--unit)));
+}
+
+.tabs [data-active="true"], .entries div:first-child {
+  background: #535246;
+  color: #d9d6c0;
+}
+
+.archive h2 {
+  font-size: max(17px, calc(19 * var(--unit)));
+  letter-spacing: .18em;
+  font-weight: 400;
+}
+
+.entries {
+  width: 69%;
+  margin-top: 5%;
+  border-left: calc(2 * var(--unit)) solid #9e9b87;
+  padding-inline-start: 1%;
+}
+
+.entries div {
+  display: flex;
+  justify-content: space-between;
+  margin: .45em 0;
+  padding: .4em 1em;
+  background: #b2af98;
+  font-size: max(12px, calc(10 * var(--unit)));
+}
+
+.archive[data-confirmed="true"] .entries div {
+  animation: eraseRow 420ms steps(5,end) forwards;
+}
+
+@keyframes eraseRow {
+  to {
+    opacity: 0;
+  }
+}
+
+.transferStatus {
+  position: absolute;
+  bottom: 5%;
+  right: 6%;
+  font-size: max(10px, calc(9 * var(--unit)));
+}
+
+.saving {
+  position: absolute;
+  top: 6.3%;
+  right: 6.7%;
+  background: #636256;
+  color: #ecebdd;
+  padding: 0 .5em;
+  letter-spacing: .13em;
+  font-size: max(9px, calc(8 * var(--unit)));
+}
+
+.saving span {
+  position: absolute;
+  right: -.52em;
+  top: 50%;
+  width: 1.15em;
+  height: 1.15em;
+  background: #747366;
+  color: #dbd9c6;
+  text-align: center;
+  line-height: 1.15;
+  animation: saveMark 1500ms linear infinite;
+}
+
+@keyframes saveMark {
+  from {
+    transform: translateY(-50%) rotate(45deg);
+  }
+  to {
+    transform: translateY(-50%) rotate(135deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .saving span {
+    animation: none;
+    transform: translateY(-50%) rotate(45deg);
+  }
+}

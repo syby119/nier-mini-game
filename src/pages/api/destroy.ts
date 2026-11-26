@@ -1,5 +1,5 @@
+import { donateSave } from '@/server/playerSaves'
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { donateSave } from '../../lib/playerSaves'
 
 // Older clients confirm the same donation without sending a run summary.
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {

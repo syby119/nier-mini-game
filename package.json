@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next dev",
-    "lint": "next lint"
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit --incremental false",
+    "format": "node scripts/format.mjs",
+    "format:check": "node scripts/format.mjs --check"
   },
   "dependencies": {
     "@react-spring/parallax": "^9.7.5",

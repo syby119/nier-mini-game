@@ -1,6 +1,6 @@
+import { saveCookieName, saveScore } from '@/server/playerSaves'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { createHash, randomUUID } from 'node:crypto'
-import { saveCookieName, saveScore } from '../../lib/playerSaves'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).end()

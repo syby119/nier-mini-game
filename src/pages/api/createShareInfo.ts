@@ -1,6 +1,6 @@
+import { supportPhrases } from '@/features/ending/messages/SupportPhrases'
+import { saveCookieName, saveMessage } from '@/server/playerSaves'
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { supportPhrases } from '../../data/SupportPhrases'
-import { saveCookieName, saveMessage } from '../../lib/playerSaves'
 
 const longest = (options: readonly string[]) => Math.max(...options.map(text => text.length))
 // Preserve the original free-text limits and fit every combination in the editor.

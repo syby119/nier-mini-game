@@ -1,0 +1,247 @@
+@font-face {
+  font-family: 'Opening Manrope';
+  src: url('/nier/fonts/Manrope-VariableFont_wght.ttf') format('truetype');
+  font-weight: 200 800;
+  font-display: swap;
+}
+
+.opening {
+  --dialogue-band: linear-gradient(transparent, rgb(49 49 46 / 76%) 13%, rgb(49 49 46 / 76%));
+  background: #1f1f1d;
+}
+
+.field, .card {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  font-family: 'Opening Manrope', Manrope, sans-serif;
+}
+
+.card {
+  --card-delay: 5.42s;
+  text-align: center;
+  color: #e3e2dc;
+}
+
+.card[data-ending="E"] {
+  --card-delay: 4.4s;
+}
+
+.card h1, .card p {
+  position: absolute;
+  left: 49.8%;
+  width: max-content;
+  max-width: 96%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  font-weight: 400;
+  line-height: 1;
+  animation: title 8.62s linear var(--card-delay) both;
+}
+
+.card h1 {
+  top: 47.5%;
+  font-size: max(14px, calc(18.5 * var(--unit)));
+  letter-spacing: .225em;
+}
+
+.card p {
+  top: 53.05%;
+  font-size: max(9px, calc(10.6 * var(--unit)));
+  letter-spacing: .24em;
+  animation: subtitle 8.62s linear var(--card-delay) both;
+}
+
+@keyframes title {
+  0%, 100% {
+    opacity: 0;
+  }
+  8%, 94% {
+    opacity: 1;
+  }
+}
+
+@keyframes subtitle {
+  0%, 37%, 100% {
+    opacity: 0;
+  }
+  45%, 94% {
+    opacity: 1;
+  }
+}
+
+.roll {
+  position: absolute;
+  bottom: 100%;
+  width: 100%;
+  color: #b8b7b0;
+  text-align: center;
+  font-size: calc(9.5 * var(--unit));
+  font-weight: 400;
+  letter-spacing: .12em;
+  animation: staffRoll var(--roll-period) linear 18.5s both;
+}
+
+.repeat, .staff {
+  display: flex;
+  flex-direction: column-reverse;
+}
+
+.repeat {
+  animation: staffRoll var(--roll-period) linear calc(18.5s + var(--roll-period)) infinite;
+}
+
+.staff {
+  gap: calc(29 * var(--unit));
+  padding-top: calc(29 * var(--unit));
+}
+
+.field[data-frozen="true"] :is(.roll, .repeat) {
+  animation-play-state: paused;
+}
+
+@keyframes staffRoll {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(50%);
+  }
+}
+
+.department {
+  display: flex;
+  flex-direction: column-reverse;
+}
+
+.department h2, .row, .center {
+  margin: 0;
+  line-height: calc(19 * var(--unit));
+}
+
+.department h2 {
+  font: inherit;
+  line-height: calc(19 * var(--unit));
+}
+
+.department h2:not(:last-child) {
+  margin-top: calc(6 * var(--unit));
+}
+
+.row {
+  display: grid;
+  grid-template-columns: calc(50% - 12 * var(--unit)) 1fr;
+  gap: calc(20 * var(--unit));
+}
+
+.row small {
+  justify-self: end;
+  font-size: .6em;
+  letter-spacing: .06em;
+}
+
+.row span {
+  justify-self: start;
+}
+
+.roll [data-ink] {
+  position: relative;
+  white-space: nowrap;
+}
+
+.field[data-noise="true"] [data-ink]::after {
+  content: attr(data-ink);
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  clip-path: inset(38% 0 39%);
+  transform-origin: 25% center;
+  animation: dataNoise 1.31s steps(1, end) infinite;
+}
+
+.field .row:nth-child(3n) [data-ink]::after {
+  animation-delay: -.49s;
+}
+
+.field .row:nth-child(3n + 1) [data-ink]::after {
+  animation-delay: -.96s;
+}
+
+@keyframes dataNoise {
+  0%, 25%, 72%, 100% {
+    opacity: 0;
+  }
+  11%, 67% {
+    opacity: .75;
+    transform: translateX(-.7em) scaleX(1.6);
+    filter: blur(.07em);
+  }
+  49%, 88% {
+    opacity: .55;
+    transform: translateX(.65em) scaleX(1.3);
+    filter: blur(.12em);
+  }
+}
+
+.opening[data-opening="ending"] .field {
+  animation: loseSignal 1.25s steps(1, end) forwards;
+}
+
+@keyframes loseSignal {
+  0% {
+    opacity: 1;
+  }
+  25% {
+    opacity: .85;
+    transform: translateY(-11%);
+  }
+  42% {
+    transform: translateY(16%);
+  }
+  59% {
+    opacity: .55;
+    transform: translateY(-29%);
+  }
+  77% {
+    opacity: .3;
+    transform: translateY(5%);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.opening[data-opening="declined"] {
+  animation: fadeOut 1.2s ease-in both;
+}
+
+@keyframes fadeOut {
+  to {
+    opacity: 0;
+  }
+}
+
+.radio {
+  --unit: min(.15625vw, .277778vh);
+  position: absolute;
+  left: 4%;
+  right: 4%;
+  bottom: 6.6%;
+  text-align: center;
+  pointer-events: none;
+  color: #e1e0db;
+  font-size: max(10px, calc(10 * var(--unit)));
+  font-weight: 600;
+  letter-spacing: .075em;
+  text-shadow: 0 1px 3px #191918;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .field[data-noise="true"] [data-ink]::after {
+    display: none;
+  }
+  .opening[data-opening="ending"] .field {
+    animation: fadeOut .3s linear forwards;
+  }
+}

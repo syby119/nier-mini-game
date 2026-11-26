@@ -1,29 +1,16 @@
-"use client"
-import CanvasContainer from "@/components/CanvasContainer";
-import Overlay from "@/components/Overlay/Overlay";
-import { Analytics } from "@vercel/analytics/react"
-import { SpeedInsights } from "@vercel/speed-insights/next"
-import { useEffect, useState } from "react";
+'use client'
+import GameCanvas from '@/game/GameCanvas'
+import GameOverlays from '@/game/GameOverlays'
+import { Analytics } from '@vercel/analytics/react'
+import { SpeedInsights } from '@vercel/speed-insights/next'
+import { useEffect, useState } from 'react'
 
 function Home() {
-  const [windowsReady, setWindowsReady] = useState<boolean>(false)
-  const setPlayerId = async () => {
-    try {
-      let data = await fetch('/api/ping')
-      let response = await data.json()
-    } catch (err) {
-
-    }
-  }
-
+  const [mounted, setMounted] = useState(false)
   useEffect(() => {
-    setPlayerId()
-  }, [])
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setWindowsReady(true)
-    }
+    setMounted(true)
+    // The ping initializes the anonymous player cookie. Offline play can still start.
+    void fetch('/api/ping').catch(() => { })
   }, [])
 
   return (
@@ -31,11 +18,11 @@ function Home() {
       <Analytics />
       <SpeedInsights />
       <div className="fixed top-0 left-0 w-full h-full">
-        {windowsReady && <CanvasContainer />}
-        <Overlay />
+        {mounted && <GameCanvas />}
+        <GameOverlays />
       </div>
     </main>
-  );
+  )
 }
 
 export default Home

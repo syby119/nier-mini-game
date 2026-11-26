@@ -1,0 +1,145 @@
+.title {
+  /* The reference title is centered at 47% of the frame height. */
+  position: absolute;
+  z-index: 1;
+  top: 47%;
+  left: 49.6%;
+  width: min(86%, 103vh, max(54.5%, 32rem));
+  aspect-ratio: 600 / 72;
+  transform: translate(-50%, -50%);
+  container-type: inline-size;
+  pointer-events: none;
+  color: #f2eee5;
+  /* The lettering, motion masks and gear share a 600 × 72 coordinate system. */
+  --art-pixel: calc(100cqw / 600);
+  /* The gear forms the dot of the i. */
+  --gear-x: calc(81 * var(--art-pixel));
+  --gear-y: calc(12.75 * var(--art-pixel));
+  --gear-radius: calc(12.25 * var(--art-pixel));
+}
+
+.title::after {
+  content: '';
+  position: absolute;
+  inset: auto -12% 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #f2eee56b 22%, #f2eee5a3 50%, #f2eee56b 78%, transparent);
+}
+
+.ink {
+  position: absolute;
+  /* The strongest frames extend past the edges of the static wordmark. */
+  inset: calc(-12 * var(--art-pixel));
+  --letters: url('/images/nier-title-lettering.svg');
+  --letter-size: calc(600 * var(--art-pixel)) calc(72 * var(--art-pixel));
+}
+
+.ink::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  mask-image: var(--letters);
+  mask-size: var(--letter-size);
+}
+
+.ink::before,
+.ink::after,
+.gear {
+  background-color: currentColor;
+  mask-position: center;
+  mask-repeat: no-repeat;
+  mask-mode: alpha;
+}
+
+@supports (mask-composite: subtract) {
+  @media (prefers-reduced-motion: no-preference) {
+    /* One animated image keeps the removed and added strokes on the same clock. */
+    .ink {
+      --faults: url('/images/nier-title-glitch.svg');
+    }
+    .ink::before {
+      mask-image: var(--letters), var(--faults);
+      mask-size: var(--letter-size), 100% 200%;
+      mask-position: center, top;
+      mask-composite: subtract;
+    }
+    .ink::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      mask-image: var(--faults);
+      mask-size: 100% 200%;
+      mask-position: bottom;
+    }
+  }
+}
+
+.gear {
+  position: absolute;
+  left: calc(var(--gear-x) - var(--gear-radius));
+  top: calc(var(--gear-y) - var(--gear-radius));
+  width: calc(2 * var(--gear-radius));
+  aspect-ratio: 1;
+  mask-image: url('/images/nier-title-gear.svg');
+  mask-size: 100% 100%;
+  /* Starting phase and rotation period measured in the flower-field recording. */
+  animation: turn 5.983s linear -695ms infinite;
+}
+
+@keyframes turn {
+  to {
+    transform: rotate(-1turn);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gear {
+    animation: none;
+  }
+}
+
+.menu {
+  position: absolute;
+  z-index: 2;
+  top: 64.5%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: grid;
+  gap: clamp(2px, .8vh, 12px);
+  width: min(55vw, 45vh);
+  color: #faf6e9;
+  text-align: center;
+}
+
+.menu button {
+  position: relative;
+  cursor: pointer;
+  padding: .35em .8em .5em;
+  font: 500 clamp(15px, 2.55vh, 56px)/1.3 Manrope, "Microsoft JhengHei", sans-serif;
+  letter-spacing: .13em;
+  text-shadow: 0 1px 6px #292724, 0 0 12px #201e1a;
+}
+
+.menu button::after {
+  position: absolute;
+  content: '';
+  left: 5%;
+  right: 5%;
+  bottom: 0;
+  height: 1px;
+  opacity: 0;
+  background: linear-gradient(90deg, transparent, #fff9e7 15%, #fff9e7 85%, transparent);
+}
+
+.menu button[data-selected=true]::after {
+  opacity: 1;
+}
+
+.menu button[data-selected=true] {
+  background: linear-gradient(90deg, transparent, #4944385c, transparent);
+}
+
+.menu button:focus-visible {
+  outline: 1px solid #fff7dfb0;
+  outline-offset: 2px;
+}

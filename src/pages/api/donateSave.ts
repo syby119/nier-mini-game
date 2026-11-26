@@ -1,5 +1,5 @@
+import { donateSave, RunStats, saveCookieName } from '@/server/playerSaves'
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { donateSave, RunStats, saveCookieName } from '../../lib/playerSaves'
 
 const fields: (keyof RunStats)[] = ['playerTime', 'deathCount', 'retryCount', 'shootCount', 'shootHitCount', 'onHitCount']
 

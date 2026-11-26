@@ -1,7 +1,7 @@
-import '../globals.css'
 import type { Metadata, Viewport } from 'next'
-import { NextIntlClientProvider } from 'next-intl';
-import { getMessages } from 'next-intl/server';
+import { NextIntlClientProvider } from 'next-intl'
+import { getMessages } from 'next-intl/server'
+import '../globals.css'
 
 export const viewport: Viewport = {
   themeColor: '#22201C',
@@ -43,21 +43,21 @@ export const metadata: Metadata = {
     description: 'An interactive tribute to NieR: Automata, recreating the emotional [E] ending experience.',
     images: ['/images/Ynhqza3.png'],
   },
-};
+}
 
 
 export default async function LocaleLayout({
   children,
   params,
 }: {
-  children: React.ReactNode;
-  params: any;
+  children: React.ReactNode
+  params: any
 }) {
-  const { locale } = await params ?? {};
+  const { locale } = await params ?? {}
 
   // Providing all messages to the client
   // side is the easiest way to get started
-  const messages = await getMessages();
+  const messages = await getMessages()
 
   return (
     <html lang={locale}>
@@ -67,5 +67,5 @@ export default async function LocaleLayout({
         </NextIntlClientProvider>
       </body>
     </html>
-  );
+  )
 }
