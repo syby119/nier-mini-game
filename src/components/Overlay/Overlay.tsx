@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useRef } from 'react'
 import StartTitleOverlay from './StartTitleOverlay';
 import ContinueOverlay from './ContinueOverlay';
 import CutsceneOverlay from './CutsceneOverlay';
@@ -13,8 +13,11 @@ import { useOverlayStore } from '../../store/OverlayStore';
 import GamePauseOverlay from './GamePauseOverlay';
 import PreLoadAssetsOverlay from './PreLoadAssetsOverlay';
 import systemInfoStore from '../../store/SystemInfoStore';
+import DeveloperStagePicker from '../DeveloperStagePicker'
+import { readStagePreview, startStagePreview } from '../../lib/developerStages'
 
 export default function Overlay() {
+    const booted = useRef(false)
     const isInitRes = systemInfoStore((state) => state.initRes);
     const isShowMainScreen = useOverlayStore((state) => state.isShowOverlay.mainTitleOverlay);
     const isShowTitleScreen = useOverlayStore((state) => state.isShowOverlay.titleScreenOverlay);
@@ -26,13 +29,25 @@ export default function Overlay() {
     const isShowRequestPlayerInfoPhase2Overlay = useOverlayStore((state) => state.isShowOverlay.requestPlayerInfoPhase2Overlay);
     const isShowRequestPlayerInfoPhase3Overlay = useOverlayStore((state) => state.isShowOverlay.requestPlayerInfoPhase3Overlay);
     useEffect(() => {
-        if (!isInitRes || !pendingDonation()) return
+        if (booted.current) return
+        if (process.env.NODE_ENV === 'development') {
+            const preview = readStagePreview(window.location.search)
+            if (preview) {
+                booted.current = true
+                startStagePreview(preview)
+                return
+            }
+        }
+        if (!isInitRes) return
+        booted.current = true
+        if (!pendingDonation()) return
         const { setShowOverlay } = useOverlayStore.getState()
         setShowOverlay('mainTitleOverlay', false)
         setShowOverlay('requestPlayerInfoPhase3Overlay', true)
     }, [isInitRes])
     return (
         <div className="w-full h-full absolute top-0 left-0 flex items-center justify-center select-none flex-col pointer-events-none">
+            {process.env.NODE_ENV === 'development' && <DeveloperStagePicker />}
             {!isInitRes && <PreLoadAssetsOverlay />}
             {isInitRes && <>
                 <NotificationOverlay />

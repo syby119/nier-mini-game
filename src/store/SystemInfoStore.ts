@@ -19,10 +19,11 @@ interface SystemInfoContextType {
   initRes: boolean;
   doneInitRes: () => void;
   gameStarted: boolean;
+  playerSpawnZ: number;
   resetSystemInfo: () => void;
   setCurrentPhase: (newPhase: string) => void;
   setTitleScreenShowed: (showed: boolean) => void;
-  setGameStarted: (started: boolean) => void;
+  setGameStarted: (started: boolean, playerSpawnZ?: number) => void;
   updateSystemInfo: (updates: Partial<ISystemInfo>) => void;
   importantPhaseRecord: string;
   setImportantPhaseRecord: (phase: string) => void;
@@ -35,6 +36,7 @@ const systemInfoStore = create<SystemInfoContextType>()(
     initRes: false,
     doneInitRes: () => set({ initRes: true }),
     gameStarted: false,
+    playerSpawnZ: 0,
     systemInfo: initSystemInfoValue,
     resetSystemInfo: () => {
       set({ systemInfo: { ...initSystemInfoValue } });
@@ -55,10 +57,8 @@ const systemInfoStore = create<SystemInfoContextType>()(
       set((state) => ({
         systemInfo: { ...state.systemInfo, titleScreenShowed: showed },
       })),
-    setGameStarted: (started) =>
-      set((state) => ({
-        gameStarted: started,
-      })),
+    setGameStarted: (started, playerSpawnZ = 0) =>
+      set({ gameStarted: started, playerSpawnZ }),
     updateSystemInfo: (updates) =>
       set((state) => ({
         systemInfo: { ...state.systemInfo, ...updates },

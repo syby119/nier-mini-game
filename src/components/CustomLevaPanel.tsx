@@ -9,6 +9,7 @@ import { stopCreditsMusic } from '../store/CreditsMusic';
 import { EmptyEnemyData, EnemyData } from '../data/EnemyData';
 import { filePicker } from "leva-file-picker";
 import { useNotificationStore } from '../store/NotificationStore';
+import { navigateToStage } from '../lib/developerStages'
 
 export default function CustomLevaPanel() {
     const setCurrentPhase = systemInfoStore(state => state.setCurrentPhase)
@@ -70,13 +71,21 @@ export default function CustomLevaPanel() {
                 label: "Phase",
                 value: currentPhase,
                 options: phaseData,
-                onChange: (v) => {
-                    if (!v) return
+                onChange: (v, _path, { initial }) => {
+                    if (!v || initial) return
+                    if (process.env.NODE_ENV === 'development') {
+                        navigateToStage(v, usePlayerStore.getState().playerInfo.needOtherPlayerHelp)
+                        return
+                    }
                     setCurrentPhase(v)
                     addNotification(`Jump to ${v} phase`)
                 }
             },
             'Jump To final': button((get) => {
+                if (process.env.NODE_ENV === 'development') {
+                    navigateToStage('final', usePlayerStore.getState().playerInfo.needOtherPlayerHelp)
+                    return
+                }
                 PubSub.publish("resetEnemiesData", {
                     type: "resetPhase",
                     phase: "final"

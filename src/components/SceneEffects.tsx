@@ -2,9 +2,10 @@ import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { euler, vec3 } from '@react-three/rapier';
 import { useFixedFrameUpdate } from '../hook/useFixedFrameUpdate';
+import usePlayerStore from '../store/PlayerStore';
 
 export const SceneEffects = () => {
-  const [COUNT, setCOUNT] = useState(0); // 粒子数量
+  const [COUNT, setCOUNT] = useState(() => usePlayerStore.getState().playerInfo.needOtherPlayerHelp ? 100 : 0);
   const particles = useRef<{
     position: THREE.Vector3;
     targetPosition: THREE.Vector3;

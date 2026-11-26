@@ -21,6 +21,14 @@ The project makes extensive use of ChatGPT to generate particle effects and some
 
 ---
 
+## Developer stage selection
+
+Run `pnpm dev` and press **F2** or click **選關** to choose a stage by ID and credit name. Each jump starts a fresh run at that checkpoint. You can also open or bookmark a stage URL.
+
+- [Concept art, stage 10_1](http://localhost:3000/zh-hk?stage=10_1)
+- [Final battle with the support formation](http://localhost:3000/zh-hk?stage=final&support=1)
+- [Results screen](http://localhost:3000/zh-hk?stage=end)
+
 ## Preview
 ![Demo](/git_image/demo.png)
 ![Demo1](/git_image/demo1.png)

@@ -48,6 +48,7 @@ export const Player = ({ showHitControls }: { showHitControls: boolean }) => {
     const addNotification = useNotificationStore(state => state.addNotification);
     const setShowOverlay = useOverlayStore(state => state.setShowOverlay);
     const currentPhase = systemInfoStore(state => state.systemInfo.currentPhase);
+    const spawnZ = systemInfoStore(state => state.playerSpawnZ);
     const playerInfo = usePlayerStore(state => state.playerInfo);
     const setPlayerShareInfo = usePlayerStore(state => state.setPlayerShareInfo)
     const setPlayerHealth = usePlayerStore(state => state.setPlayerHealth)
@@ -417,19 +418,16 @@ export const Player = ({ showHitControls }: { showHitControls: boolean }) => {
         playerNodes['Center'].visible = true
         playerNodes['Header'].visible = true
     }
-    const newPosition = vec3({ x: 0, y: 0, z: 0 });
     useFixedFrameUpdate(() => {
         if (isPaused) return
         if (rb.current && resetPlayerPositionRef.current) {
             const playerRb = rb.current;
-            if (!vec3(playerRb.translation()).equals(newPosition)) {
-                playerRb.setTranslation(newPosition, true); // 更新刚体位置
-                playerRb.setLinvel(vec3({ x: 0, y: 0, z: 0 }), true); // 重置线速度
-                playerRb.setAngvel(vec3({ x: 0, y: 0, z: 0 }), true); // 重置角速度
-                player.current.position.copy(newPosition);
-                player.current.rotation.y = 0;
-                resetPlayerPositionRef.current = false
-            }
+            playerRb.setTranslation({ x: 0, y: 0, z: spawnZ }, true);
+            playerRb.setLinvel({ x: 0, y: 0, z: 0 }, true);
+            playerRb.setAngvel({ x: 0, y: 0, z: 0 }, true);
+            player.current.position.set(0, 0, 0);
+            player.current.rotation.y = 0;
+            resetPlayerPositionRef.current = false
         }
     })
 
@@ -482,6 +480,7 @@ export const Player = ({ showHitControls }: { showHitControls: boolean }) => {
         <>
             <RigidBody
                 name='player_rigidbody'
+                position={[0, 0, spawnZ]}
                 lockRotations
                 enabledTranslations={[true, false, true]}//只允许在x和z轴上移动
                 ref={rb}
