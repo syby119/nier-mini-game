@@ -44,8 +44,6 @@
   "finalLongMsg2": "即使如此，你仍願意拯救他人嗎?",
   "thanksForPlaying": "感谢游玩",
   "mainTitle": "使用React Three Fiber和Three.js实现的NieR: Automata [E]结局小游戏",
-  "control1": "键盘: W A S D 移动, 鼠标左键瞄准 + 同时按住鼠标右键射击",
-  "control2": "手柄: 左摇杆 移动,右摇杆 瞄准",
   "shooting": "射击",
   "unlockDebugMenu": "已解鎖Debug菜單",
   "finale": {
