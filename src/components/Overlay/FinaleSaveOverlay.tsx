@@ -2,8 +2,8 @@ import { keepEndingSave, pendingDonation, rememberDonation } from '../../lib/end
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { finaleClips, finaleQuestions } from '../../data/FinaleDialogue'
-import useAudioStore from '../../store/AudioStore'
 import { useOverlayStore } from '../../store/OverlayStore'
+import { playPodVoice } from '../../store/PodVoice'
 import usePlayerStore from '../../store/PlayerStore'
 import systemInfoStore from '../../store/SystemInfoStore'
 import DialoguePage from './DialoguePage'
@@ -46,25 +46,20 @@ export default function FinaleSaveOverlay({ message = false }: { message?: boole
 
   useEffect(() => {
     if (screen !== 'dialogue') return
-    const audio = new Audio('/nier/sound/dialogue/' + clip)
-    audio.volume = useAudioStore.getState().initVolume
     let timer: number
-    let active = true
     function next(delay: number) {
-      if (active && !question) {
+      if (!question) {
         window.clearTimeout(timer)
         timer = window.setTimeout(advance, delay)
       }
     }
-    audio.onended = () => next(420)
-    audio.onerror = () => next(Math.max(1400, Array.from(text).length * 90))
-    audio.play().catch(() => next(Math.max(1400, Array.from(text).length * 90)))
+    const stopVoice = playPodVoice('/nier/sound/dialogue/' + clip, {
+      onEnded: () => next(420),
+      onError: () => next(Math.max(1400, Array.from(text).length * 90)),
+    })
     return () => {
-      active = false
       window.clearTimeout(timer)
-      audio.onended = null
-      audio.onerror = null
-      audio.pause()
+      stopVoice()
     }
   }, [clip, screen, question, advance, text])
 

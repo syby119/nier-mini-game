@@ -1,10 +1,12 @@
 import { create } from 'zustand';
 import { Howl } from 'howler';
-import { setCreditsVolume } from './CreditsMusic';
+import { setCreditsDialogueLevel, setCreditsVolume } from './CreditsMusic';
+
+type SoundPool = { pool: Howl[]; index: number; volume: number; type?: string };
 
 type AudioStore = {
     initVolume: number; // 初始音量
-    sounds: { [key: string]: { pool: Howl[]; index: number, type?: string } }; // 音效池
+    sounds: Record<string, SoundPool>;
     play: (name: string, config?: {
         volume?: number
         sprite?: string
@@ -24,10 +26,28 @@ type AudioStore = {
 };
 
 const lastVoice = new WeakMap<Howl, number>()
+let dialogueMusicLevel = 1
+
+function applyPoolVolume(soundPool: SoundPool, fadeMs = 0) {
+    const level = soundPool.volume * (soundPool.type === 'music' ? dialogueMusicLevel : 1)
+    for (const sound of soundPool.pool) {
+        if (fadeMs && sound.playing() && sound.volume() !== level) sound.fade(sound.volume(), level, fadeMs)
+        else sound.volume(level)
+    }
+}
+
+export function setDialogueMusicLevel(level: number, fadeMs: number) {
+    if (level === dialogueMusicLevel) return
+    dialogueMusicLevel = level
+    setCreditsDialogueLevel(level, fadeMs / 1000)
+    for (const soundPool of Object.values(useAudioStore.getState().sounds)) {
+        if (soundPool.type === 'music') applyPoolVolume(soundPool, fadeMs)
+    }
+}
 
 // 初始化音效
-const initializeSoundsWithPool = (): Record<string, { pool: Howl[]; index: number }> => {
-    const sounds: Record<string, { pool: Howl[]; index: number }> = {};
+const initializeSoundsWithPool = (): Record<string, SoundPool> => {
+    const sounds: Record<string, SoundPool> = {};
     const audioList: {
         name: string; src: string; volume?: number, sprite?: {
             [key: string]: [number, number];
@@ -42,15 +62,17 @@ const initializeSoundsWithPool = (): Record<string, { pool: Howl[]; index: numbe
         ];
 
     audioList.forEach((audio) => {
+        const volume = audio.volume ?? 1
         sounds[audio.name] = {
             pool: Array.from({ length: audio.poolSize || 1 }, () =>
                 new Howl({
                     src: [audio.src],
-                    volume: audio.volume || 1.0,
+                    volume,
                     loop: audio.loop,
                 })
             ),
             index: 0, // 当前池的索引
+            volume,
         };
     });
 
@@ -80,7 +102,9 @@ const useAudioStore = create<AudioStore>((set, get) => ({
                 }
             }
             const voice = sound.play(config?.sprite)
-            if (config?.volume !== undefined) sound.volume(config.volume, voice)
+            if (config?.volume !== undefined) {
+                sound.volume(config.volume * (soundPool.type === 'music' ? dialogueMusicLevel : 1), voice)
+            }
             lastVoice.set(sound, voice)
 
             // 更新池的索引，循环回到头部
@@ -94,7 +118,8 @@ const useAudioStore = create<AudioStore>((set, get) => ({
     setVolume: (name: string, volume: number) => {
         const soundPool = get().sounds[name];
         if (soundPool) {
-            soundPool.pool.forEach((sound) => sound.volume(volume));
+            soundPool.volume = volume
+            applyPoolVolume(soundPool)
         } else {
             console.warn(`Audio "${name}" not found!`);
         }
@@ -105,7 +130,8 @@ const useAudioStore = create<AudioStore>((set, get) => ({
         set({ initVolume: volume });
         setCreditsVolume(volume);
         Object.values(get().sounds).forEach((soundPool) => {
-            soundPool.pool.forEach((sound) => sound.volume(volume));
+            soundPool.volume = volume
+            applyPoolVolume(soundPool)
         });
     },
     // 停止音效
@@ -128,17 +154,19 @@ const useAudioStore = create<AudioStore>((set, get) => ({
             return;
         }
 
+        const volume = config?.volume ?? (config?.type === 'music' ? get().initVolume : 1)
         get().sounds[name] = {
             pool: Array.from({ length: config?.poolSize || 1 }, () =>
                 new Howl({
                     src: [src],
-                    volume: config?.volume || 1.0,
+                    volume: volume * (config?.type === 'music' ? dialogueMusicLevel : 1),
                     sprite: config?.sprite,
                     html5: true,
                     loop: config?.loop,
                 })
             ),
             index: 0, // 当前池的索引
+            volume,
             type: config?.type,
         };
     },

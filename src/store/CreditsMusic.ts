@@ -14,6 +14,7 @@ type Voice = { source: AudioBufferSourceNode, gain: GainNode, startedAt: number 
 type RefrainCue = { when: number, offset: number, blend: number }
 type Playback = {
   output: GainNode
+  dialogue: GainNode
   sources: Set<AudioBufferSourceNode>
   arrangement: Arrangement
   offset: number
@@ -27,6 +28,36 @@ let recording: Score | undefined
 let loading = false
 let playback: Playback | undefined
 let volume = .3
+let dialogueLevel = 1
+let musicBus: GainNode | undefined
+const dialogueFaders = new Set<GainNode>()
+
+export function getGameAudioContext() {
+  return context ??= new AudioContext()
+}
+
+export function rampGain(node: GainNode, level: number, seconds: number) {
+  const now = node.context.currentTime
+  const gain = node.gain
+  const current = gain.value
+  gain.cancelScheduledValues(now)
+  gain.setValueAtTime(current, now)
+  gain.linearRampToValueAtTime(level, now + seconds)
+}
+
+export function setCreditsDialogueLevel(level: number, seconds: number) {
+  dialogueLevel = level
+  dialogueFaders.forEach(node => {
+    // Once a run is fading to silence, a Pod line ending must not lift its tail.
+    if (node === playback?.dialogue || level < node.gain.value) rampGain(node, level, seconds)
+  })
+}
+
+function disconnectOutput(run: Playback) {
+  run.output.disconnect()
+  run.dialogue.disconnect()
+  dialogueFaders.delete(run.dialogue)
+}
 
 function wrap(position: number, loop: Loop) {
   const length = loop.end - loop.start
@@ -110,7 +141,7 @@ function playLoop(run: Playback, buffer: AudioBuffer, loop: Loop, offset: number
     gain.disconnect()
     run.sources.delete(source)
     if (run.solo?.source === source) run.solo = undefined
-    if (run.sources.size === 0) run.output.disconnect()
+    if (run.sources.size === 0) disconnectOutput(run)
   }
   source.start(when, offset)
   return { source, gain, startedAt: when }
@@ -198,7 +229,7 @@ function removeUnlockListeners() {
 }
 
 export function prepareCreditsMusic() {
-  const audio = context ??= new AudioContext()
+  const audio = getGameAudioContext()
   if (audio.state !== 'running' || !recording) {
     window.addEventListener('pointerup', prepareCreditsMusic)
     window.addEventListener('keydown', prepareCreditsMusic)
@@ -215,12 +246,19 @@ export function prepareCreditsMusic() {
 }
 
 function requestMusic(arrangement: Arrangement, offset = 0) {
-  const audio = context ??= new AudioContext()
+  const audio = getGameAudioContext()
   if (!playback) {
+    if (!musicBus) {
+      musicBus = audio.createGain()
+      musicBus.gain.value = volume
+      musicBus.connect(audio.destination)
+    }
     const output = audio.createGain()
-    output.gain.value = volume
-    output.connect(audio.destination)
-    playback = { output, sources: new Set(), arrangement, offset }
+    const dialogue = audio.createGain()
+    dialogue.gain.value = dialogueLevel
+    output.connect(dialogue).connect(musicBus)
+    dialogueFaders.add(dialogue)
+    playback = { output, dialogue, sources: new Set(), arrangement, offset }
   } else if (arrangement === 'choir' || (arrangement === 'refrain' && playback.arrangement === 'solo')) {
     playback.arrangement = arrangement
   }
@@ -237,22 +275,19 @@ export function stopCreditsMusic(duration = .65) {
   removeUnlockListeners()
   if (!run) return
   const now = run.output.context.currentTime
+  if (run.dialogue.gain.value < dialogueLevel) {
+    rampGain(run.dialogue, run.dialogue.gain.value, .005)
+  }
   const end = now + duration
   const level = run.output.gain.value
   const release = Float32Array.from({ length: 33 }, (_, i) => level * (1 - i / 32) ** 2)
   run.output.gain.cancelScheduledValues(now)
   run.output.gain.setValueCurveAtTime(release, now, duration)
   run.sources.forEach(source => source.stop(end))
-  if (!run.sources.size) run.output.disconnect()
+  if (!run.sources.size) disconnectOutput(run)
 }
 
 export function setCreditsVolume(next: number) {
   volume = next
-  if (!playback) return
-  const { gain, context } = playback.output
-  const now = context.currentTime
-  const current = gain.value
-  gain.cancelScheduledValues(now)
-  gain.setValueAtTime(current, now)
-  gain.linearRampToValueAtTime(next, now + .025)
+  if (musicBus) rampGain(musicBus, next, .025)
 }

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { openingVoices } from '../../data/OpeningDialogue'
-import useAudioStore from '../../store/AudioStore'
 import { startCreditsMusic, stopCreditsMusic } from '../../store/CreditsMusic'
+import { playPodVoice } from '../../store/PodVoice'
 import { useOverlayStore } from '../../store/OverlayStore'
 import usePlayerStore from '../../store/PlayerStore'
 import systemInfoStore from '../../store/SystemInfoStore'
@@ -65,31 +65,22 @@ export default function StartTitleOverlay() {
 
   useEffect(() => {
     if (!voice || typeof cue !== 'number' || (scene !== 'credits' && scene !== 'battle')) return
-    const audio = new Audio(voice.src)
-    audio.volume = useAudioStore.getState().initVolume
     let timer: number
-    let active = true
     const next = cue === 32 ? () => setOverlay('titleScreenOverlay', false) : advance
     function schedule(delay: number) {
-      if (!active || question) return
+      if (question) return
       window.clearTimeout(timer)
       timer = window.setTimeout(next, delay)
     }
-    if (cue <= 7) {
-      schedule(reportDurations[cue - 1])
-    } else {
-      // Allow the full line to play, even when the user doesn't advance it by hand.
-      schedule(voice.duration + 1600)
-      audio.onplaying = () => schedule(voice.duration + 600)
-      audio.onended = () => schedule(220)
-    }
-    void audio.play().catch(() => { /* The caption keeps its timing without audio. */ })
+    const timedReport = cue <= 7
+    schedule(timedReport ? reportDurations[cue - 1] : voice.duration + 1600)
+    const stopVoice = playPodVoice(voice.src, timedReport ? {} : {
+      onPlaying: () => schedule(voice.duration + 600),
+      onEnded: () => schedule(220),
+    })
     return () => {
-      active = false
       window.clearTimeout(timer)
-      audio.onplaying = null
-      audio.onended = null
-      audio.pause()
+      stopVoice()
     }
   }, [cue, scene, voice, question, advance, setOverlay])
 
