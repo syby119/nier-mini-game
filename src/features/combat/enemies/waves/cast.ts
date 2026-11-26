@@ -72,6 +72,7 @@ export const castWaves: EnemyDefinition[] = [
     initPosition: vec3({ x: -0.6, y: 0, z: 0.3 }),
     text: 'Japanese Voices',
     phase: '2',
+    isImportantPhase: true,
     nextPhase: '3',
     childrenIds: [],
     strongType: StrongType.NORMAL,

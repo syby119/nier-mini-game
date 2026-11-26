@@ -37,7 +37,6 @@ export function startShooting() {
     window.addEventListener('pagehide', saveCheckpoint)
     document.addEventListener('visibilitychange', saveWhenHidden)
   }
-  system.setImportantPhaseRecord('0')
   system.updateSystemInfo({ mainOverlayShowed: true, titleScreenShowed: true, currentPhase: '0' })
   system.setGameStarted(true)
 }
@@ -56,7 +55,6 @@ export function returnToCover() {
   stopCreditsMusic()
   const system = systemInfoStore.getState()
   system.setGameStarted(false)
-  system.setImportantPhaseRecord('')
   system.resetSystemInfo()
   const player = usePlayerStore.getState()
   player.resetPlayerInfo()

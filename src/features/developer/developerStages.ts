@@ -46,7 +46,6 @@ export function startStagePreview({ stage, support }: StagePreview) {
     overlay.setShowOverlay('playerSummaryOverlay', true)
     return
   }
-  system.setImportantPhaseRecord(stage)
   if (support) {
     usePlayerStore.getState().updatePlayerInfo({ needOtherPlayerHelp: true, rescuePilots: getRescuePilots() })
     joinCreditsChoir()

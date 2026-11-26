@@ -13,12 +13,11 @@ import { EnemyData } from './waves/EnemyData'
 
 export const EnemySystem = React.memo(() => {
   const currentPhase = systemInfoStore(state => state.systemInfo.currentPhase)
-  const setImportantPhaseRecord = systemInfoStore(state => state.setImportantPhaseRecord)
   const setCurrentPhase = systemInfoStore(state => state.setCurrentPhase)
   const setOverlay = useOverlayStore(state => state.setShowOverlay)
   const addCombatStats = usePlayerStore(state => state.addCombatStats)
   const updatePlayerInfo = usePlayerStore(state => state.updatePlayerInfo)
-  const playerHealth = usePlayerStore(state => state.playerInfo.playerHealth)
+  const playerAlive = usePlayerStore(state => state.playerInfo.playerHealth > 0)
   const [enemiesMap, setEnemiesMap] = useState<Map<string, EnemyDefinition>>(new Map())
   const pendingEnemies = useRef<Set<string>>(new Set())
   const timersRef = useRef<Set<number>>(new Set())
@@ -28,7 +27,6 @@ export const EnemySystem = React.memo(() => {
   const spawnWave = (phase: string) => {
     const wave = EnemyData.filter(enemy => enemy.phase === phase)
     if (!wave.length) return
-    if (wave.some(enemy => enemy.isImportantPhase)) setImportantPhaseRecord(phase)
     setEnemiesMap(active => {
       const next = new Map(active)
       for (const enemy of wave) {
@@ -57,10 +55,9 @@ export const EnemySystem = React.memo(() => {
   )
 
   useEffect(() => {
-    if (playerHealth > 0) {
-      debouncedPhaseUpdate(currentPhase)
-    }
-  }, [currentPhase, debouncedPhaseUpdate])
+    if (playerAlive && currentPhase) debouncedPhaseUpdate(currentPhase)
+    return () => debouncedPhaseUpdate.cancel()
+  }, [currentPhase, playerAlive, debouncedPhaseUpdate])
 
   useEffect(() => {
     const reset = PubSub.subscribe('resetEnemiesData', (_, request: { type: string, phase?: string }) => {
@@ -110,6 +107,7 @@ export const EnemySystem = React.memo(() => {
     childrenIds?: string[],
     points: number = 0
   ) => {
+    if (usePlayerStore.getState().playerInfo.playerHealth <= 0) return
     //避免同个敌人多次死亡
     if (defeatedEnemyIds.current.has(id)) {
       removeEnemy(id)

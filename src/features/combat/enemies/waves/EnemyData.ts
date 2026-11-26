@@ -14,3 +14,14 @@ export const EnemyData: EnemyDefinition[] = [
   ...publishingWaves,
   ...finaleWaves,
 ]
+
+export function getRetryPhase(phase: string) {
+  let checkpoint = '0'
+  // Waves are in staff-roll order. Only the lead target advances the wave.
+  for (const enemy of EnemyData) {
+    if (!enemy.nextPhase) continue
+    if (enemy.isImportantPhase) checkpoint = enemy.phase
+    if (enemy.phase === phase) return checkpoint
+  }
+  return '0'
+}

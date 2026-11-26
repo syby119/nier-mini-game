@@ -43,7 +43,7 @@ Run `pnpm format` to format the source, styles and configuration. Use `pnpm form
 
 ## Developer stage selection
 
-Run `pnpm dev` and press **F2** or click **選關** to choose a stage by ID and credit name. Each jump starts a fresh run at that checkpoint. You can also open or bookmark a stage URL.
+Run `pnpm dev` and press **F2** or click **選關** to choose a stage by ID and credit name. Each jump starts at the selected wave. After a defeat, retrying returns to the start of that credit section, just as in normal play. You can also open or bookmark a stage URL.
 
 - [Concept art, stage 10_1](http://localhost:3000/zh-hk?stage=10_1)
 - [Final battle with the support formation](http://localhost:3000/zh-hk?stage=final&support=1)

@@ -1,4 +1,5 @@
 import { joinCreditsChoir, prepareRescueRefrain } from '@/features/audio/CreditsMusic'
+import { getRetryPhase } from '@/features/combat/enemies/waves/EnemyData'
 import usePlayerStore from '@/features/combat/player/PlayerStore'
 import { getRescuePilots, useNetworkStore } from '@/features/community/NetworkStore'
 import { finishBattle, returnToCover } from '@/game/battleSession'
@@ -26,6 +27,7 @@ type Outcome = 'retry' | 'rescue' | 'giveUp'
 export default function ContinueOverlay() {
   const t = useTranslations()
   const [deathCount] = useState(() => Math.max(1, usePlayerStore.getState().playerShareInfo.deathCount))
+  const [retryPhase] = useState(() => getRetryPhase(systemInfoStore.getState().systemInfo.currentPhase))
   const [stage, setStage] = useState<Stage>('burst')
   const [showMessages, setShowMessages] = useState(true)
   const [rescuer, setRescuer] = useState('')
@@ -60,7 +62,7 @@ export default function ContinueOverlay() {
           const hasHelp = outcome.current === 'rescue'
           player.updatePlayerInfo({ needOtherPlayerHelp: hasHelp, rescuePilots: hasHelp ? pilots.current : undefined })
           player.respawnPlayer()
-          system.setCurrentPhase(system.importantPhaseRecord || '0')
+          system.setCurrentPhase(retryPhase)
           PubSub.publish('updateSceneEffectCount', hasHelp ? 100 : 30)
         }
         setStage('returning')
@@ -69,7 +71,7 @@ export default function ContinueOverlay() {
       timer = window.setTimeout(() => setShowOverlay('continueOverlay', false), 500)
     }
     return () => window.clearTimeout(timer)
-  }, [stage, deathCount, setShowOverlay])
+  }, [stage, deathCount, retryPhase, setShowOverlay])
 
   function answer(index: number) {
     if (stage === 'offer') {

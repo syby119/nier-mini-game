@@ -27,8 +27,6 @@ interface SystemInfoContextType {
   setTitleScreenShowed: (showed: boolean) => void
   setGameStarted: (started: boolean, playerSpawnZ?: number) => void
   updateSystemInfo: (updates: Partial<ISystemInfo>) => void
-  importantPhaseRecord: string
-  setImportantPhaseRecord: (phase: string) => void
   postEffects: boolean
   setPostEffects: (value: boolean) => void
 }
@@ -65,8 +63,6 @@ const systemInfoStore = create<SystemInfoContextType>()(
       set((state) => ({
         systemInfo: { ...state.systemInfo, ...updates },
       })),
-    importantPhaseRecord: '',
-    setImportantPhaseRecord: (phase) => set({ importantPhaseRecord: phase }),
     postEffects: true,
     setPostEffects: (value) =>
       set((state) => ({
