@@ -4,7 +4,7 @@ import { CSSProperties } from 'react'
 
 // The offline messages are taken from the finale recording. Keep the original
 // languages and signatures where they are legible in the footage.
-const recorded: (SupportMessage & { translation?: string })[] = [
+const [firstEncouragement, ...otherRecorded]: (SupportMessage & { translation?: string })[] = [
   { name: 'Honoka', content: 'My voice may not reach you. All the same, I’m in your corner.', region: 'Italy', translation: '也許我的聲音傳不到你那裡。即使如此，我仍然支持你。' },
   { name: 'Colton', content: 'It was hard for me as well. In other words, we’ve got this!' },
   { name: '', content: 'I like Emil! In other words, I want to help.' },
@@ -42,7 +42,8 @@ const distantMessage = { x: 31, y: 24, size: 5.8, opacity: .27 }
 export default function DeathMessages({ deathCount, visible }: { deathCount: number, visible: boolean }) {
   const live = useNetworkStore(state => state.supportMessages)
   const count = Math.min(1 + (deathCount - 2) * 3, placements.length)
-  const messages = [...live, ...recorded].slice(0, count)
+  // Keep the first encouragement in place even if online messages arrive mid-dialogue.
+  const messages = [firstEncouragement, ...live, ...otherRecorded].slice(0, count)
   return (
     <div className={styles.messages} data-visible={visible} aria-hidden="true">
       {messages.map((message, index) => {

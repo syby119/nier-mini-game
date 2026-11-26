@@ -1,3 +1,4 @@
+import { isSupportMessageText } from '@/features/community/supportMessageText'
 import { supportPhrases } from '@/features/ending/messages/SupportPhrases'
 import { saveCookieName, saveMessage } from '@/server/playerSaves'
 import type { NextApiRequest, NextApiResponse } from 'next'
@@ -13,7 +14,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const { content, region } = req.body || {}
   const cookie = saveCookieName(req.body?.profileId)
   const id = cookie && req.cookies[cookie]
-  if (!id || typeof content !== 'string' || !content.trim() || content.length > messageLimit ||
+  if (!id || !isSupportMessageText(content) || content.length > messageLimit ||
     typeof region !== 'string' || !region.trim() || region.length > regionLimit) return res.status(400).end()
   if (!await saveMessage(id, content.trim(), region.trim())) return res.status(404).end()
   return res.status(200).json({ message: 'Success' })

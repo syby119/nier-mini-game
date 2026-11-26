@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { subscribeWithSelector } from 'zustand/middleware'
+import { isSupportMessageText } from './supportMessageText'
 
 export interface SupportMessage {
   name: string
@@ -55,7 +56,7 @@ export const useNetworkStore = create<NetworkStore>()(
             set({ notEnablePlayerNameList: names.sort(() => Math.random() - .5) })
           }
           if (messages.status === 'fulfilled') {
-            set({ supportMessages: messages.value.filter(row => typeof row.content === 'string' && row.content.trim()) })
+            set({ supportMessages: messages.value.filter(row => isSupportMessageText(row?.content)) })
           }
           set({ isConnectedToNetwork: [scores, helpers, messages].every(result => result.status === 'fulfilled') })
         } finally {
