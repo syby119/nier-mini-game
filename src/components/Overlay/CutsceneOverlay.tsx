@@ -1,4 +1,5 @@
 import { animated, useSpring } from '@react-spring/web'
+import { stopCreditsMusic } from '../../store/CreditsMusic'
 import { useOverlayStore } from '../../store/OverlayStore'
 
 const AnimatedDiv = animated('div')
@@ -8,6 +9,7 @@ export default function CutsceneOverlay() {
   const [style] = useSpring(() => ({
     from: { opacity: 0 },
     to: async next => {
+      stopCreditsMusic(3)
       await next({ opacity: 1 })
       setOverlay('playerSummaryOverlay', true)
       await next({ opacity: 0, delay: 500 })

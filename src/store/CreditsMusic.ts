@@ -11,13 +11,15 @@ type Score = { music: AudioBuffer, voices?: AudioBuffer }
 type Arrangement = 'solo' | 'refrain' | 'choir'
 
 type Voice = { source: AudioBufferSourceNode, gain: GainNode, startedAt: number }
+type RefrainCue = { when: number, offset: number, blend: number }
 type Playback = {
   output: GainNode
   sources: Set<AudioBufferSourceNode>
   arrangement: Arrangement
   offset: number
   solo?: Voice
-  choirFader?: AudioParam
+  refrain?: { backing: Voice, voices?: Voice }
+  joined?: boolean
 }
 
 let context: AudioContext | undefined
@@ -75,10 +77,17 @@ async function loadRecording(audio: AudioContext): Promise<Score> {
       voices.copyToChannel(layer.getChannelData(ch).subarray(0, length), ch)
     }
   }
-  // The layer comes from this stereo master. Their sum restores the original mix at any playhead.
+  const edge = Math.round(.012 * music.sampleRate)
   for (let ch = 0; ch < music.numberOfChannels; ch++) {
     const backing = music.getChannelData(ch)
     const ensemble = voices.getChannelData(ch)
+    // The isolated voices have no pre-roll. Give the seam to the continuous master so it
+    // stays smooth at every choir level. The two layers still sum to the original mix.
+    for (let i = 0; i < edge; i++) {
+      const gain = (1 - Math.cos(Math.PI * i / (edge - 1))) / 2
+      ensemble[i] *= gain
+      ensemble[length - 1 - i] *= gain
+    }
     for (let i = 0; i < length; i++) backing[start + i] -= ensemble[i]
   }
   return { music, voices }
@@ -100,48 +109,63 @@ function playLoop(run: Playback, buffer: AudioBuffer, loop: Loop, offset: number
     source.disconnect()
     gain.disconnect()
     run.sources.delete(source)
+    if (run.solo?.source === source) run.solo = undefined
     if (run.sources.size === 0) run.output.disconnect()
   }
   source.start(when, offset)
   return { source, gain, startedAt: when }
 }
 
-function enterRefrain(run: Playback, score: Score, now: number) {
+function refrainCue(run: Playback, now: number): RefrainCue {
   const solo = run.solo
-  let when = now
-  let offset = choirEntry
-  if (solo) {
-    const earliest = now + .02
-    const elapsed = earliest - solo.startedAt + run.offset
-    const position = elapsed < soloLoop.end ? elapsed : wrap(elapsed, soloLoop)
-    const atFirstRefrain = position >= soloLoop.start && position < soloLoop.start + 8 * bar
-    const downbeat = position < soloLoop.start || atFirstRefrain ? soloLoop.start : soloLoop.end
-    // In the matching refrain the melody can carry straight across. In a verse, keep the
-    // current line through its last beat and use the pickup to the next two-bar line.
-    const nextLine = downbeat + Math.ceil((position + beat - downbeat) / (2 * bar)) * 2 * bar
-    const entry = atFirstRefrain ? position : nextLine - beat
-    when = earliest + (entry - position)
-    offset = wrap(choirEntry + entry - downbeat, choirLoop)
-  }
+  if (!solo) return { when: now, offset: choirEntry, blend: 0 }
 
+  const earliest = now + .02
+  const elapsed = run.offset + earliest - solo.startedAt
+  const loop = { start: solo.source.loopStart, end: solo.source.loopEnd }
+  const position = elapsed < loop.end ? elapsed : wrap(elapsed, loop)
+  const downbeat = position < loop.start ? loop.start : loop.end
+  const natural = { when: earliest + downbeat - position, offset: choirEntry, blend: bar }
+  // A retry arms the next complete refrain. The solo keeps its own melody up to that downbeat.
+  if (run.arrangement !== 'choir' || downbeat - position <= 2 * beat) return natural
+
+  const inRefrain = position - loop.start
+  if (inRefrain >= 0 && inRefrain < 8 * bar - beat) {
+    return { when: earliest, offset: choirEntry + inRefrain, blend: Math.min(bar, 8 * bar - inRefrain) }
+  }
+  // An early rescue can use the pickup after the current vocal line. Enter on the first
+  // words of the recorded refrain even when the player accepted halfway through a verse.
+  const line = 2 * bar
+  const pickup = downbeat + Math.ceil((position + beat - downbeat) / line) * line - beat
+  return { when: earliest + pickup - position, offset: choirEntry - beat, blend: 2 * beat }
+}
+
+function enterRefrain(run: Playback, score: Score, cue: RefrainCue) {
+  const { offset, blend } = cue
   const rate = score.music.sampleRate
+  const when = Math.round(cue.when * rate) / rate
+  const solo = run.solo
+  if (run.refrain) {
+    // Early acceptance can replace a future cue. Both of these sources are still silent.
+    run.refrain.backing.source.stop()
+    run.refrain.voices?.source.stop()
+    solo?.gain.gain.cancelScheduledValues(run.output.context.currentTime)
+  }
   const start = Math.round(choirLoop.start * rate)
   const length = Math.round(choirLoop.end * rate) - start
-  const frame = Math.round((offset - choirLoop.start) * rate) % length
+  const frame = (Math.round(offset * rate) - start) % length
   const backing = playLoop(run, score.music, choirLoop, (start + frame) / rate, when, solo ? 0 : 1)
   if (solo) {
-    const end = when + beat
+    const end = when + blend
     backing.gain.gain.setValueAtTime(0, when)
     backing.gain.gain.linearRampToValueAtTime(1, end)
     solo.gain.gain.setValueAtTime(1, when)
     solo.gain.gain.linearRampToValueAtTime(0, end)
     solo.source.stop(end)
-    run.solo = undefined
   }
-  if (score.voices) {
-    const loop = { start: 0, end: length / rate }
-    run.choirFader = playLoop(run, score.voices, loop, frame / rate, when, 0, backing.gain).gain.gain
-  }
+  const voices = score.voices && playLoop(run, score.voices, { start: 0, end: length / rate },
+    frame / rate, when, 0, backing.gain)
+  run.refrain = { backing, voices }
 }
 
 function syncPlayback() {
@@ -150,16 +174,21 @@ function syncPlayback() {
   removeUnlockListeners()
   if (!run) return
   const now = context.currentTime
-  if (!run.sources.size && run.arrangement !== 'choir') {
+  if (!run.solo && !run.refrain && run.arrangement !== 'choir') {
     run.solo = playLoop(run, recording.music, soloLoop, run.offset, now, 1)
   }
-  if (run.arrangement === 'solo' || (run.arrangement === 'refrain' && !recording.voices)) return
-  if (run.solo || !run.sources.size) enterRefrain(run, recording, now)
-  if (run.arrangement === 'choir' && run.choirFader) {
-    // The filmed rescue adds voices during the confirmation fade, over approximately one second.
-    run.choirFader.setValueAtTime(0, now)
-    run.choirFader.linearRampToValueAtTime(1, now + 1)
-    run.choirFader = undefined
+  if (run.arrangement === 'solo' || run.joined || (run.arrangement === 'refrain' && !recording.voices)) return
+  const scheduled = run.refrain?.backing.startedAt
+  if (scheduled === undefined || (run.arrangement === 'choir' && scheduled > now)) {
+    const cue = refrainCue(run, now)
+    if (scheduled === undefined || cue.when < scheduled - .02) enterRefrain(run, recording, cue)
+  }
+  if (run.arrangement === 'choir' && run.refrain) {
+    const start = Math.max(now, run.refrain.backing.startedAt)
+    const gain = run.refrain.voices?.gain.gain
+    gain?.setValueAtTime(0, start)
+    gain?.linearRampToValueAtTime(1, start + 1)
+    run.joined = true
   }
 }
 
@@ -202,20 +231,28 @@ export function startCreditsMusic(offset = 0) { requestMusic('solo', offset) }
 export function prepareRescueRefrain() { if (playback) requestMusic('refrain') }
 export function joinCreditsChoir() { requestMusic('choir') }
 
-export function stopCreditsMusic() {
+export function stopCreditsMusic(duration = .65) {
   const run = playback
   playback = undefined
   removeUnlockListeners()
   if (!run) return
   const now = run.output.context.currentTime
-  const end = now + .65
-  run.output.gain.setValueAtTime(run.output.gain.value, now)
-  run.output.gain.linearRampToValueAtTime(0, end)
+  const end = now + duration
+  const level = run.output.gain.value
+  const release = Float32Array.from({ length: 33 }, (_, i) => level * (1 - i / 32) ** 2)
+  run.output.gain.cancelScheduledValues(now)
+  run.output.gain.setValueCurveAtTime(release, now, duration)
   run.sources.forEach(source => source.stop(end))
   if (!run.sources.size) run.output.disconnect()
 }
 
 export function setCreditsVolume(next: number) {
   volume = next
-  if (playback) playback.output.gain.value = next
+  if (!playback) return
+  const { gain, context } = playback.output
+  const now = context.currentTime
+  const current = gain.value
+  gain.cancelScheduledValues(now)
+  gain.setValueAtTime(current, now)
+  gain.linearRampToValueAtTime(next, now + .025)
 }

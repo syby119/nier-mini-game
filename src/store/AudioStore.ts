@@ -23,6 +23,8 @@ type AudioStore = {
     removeSoundByType: (type: string) => void;
 };
 
+const lastVoice = new WeakMap<Howl, number>()
+
 // 初始化音效
 const initializeSoundsWithPool = (): Record<string, { pool: Howl[]; index: number }> => {
     const sounds: Record<string, { pool: Howl[]; index: number }> = {};
@@ -45,7 +47,6 @@ const initializeSoundsWithPool = (): Record<string, { pool: Howl[]; index: numbe
                 new Howl({
                     src: [audio.src],
                     volume: audio.volume || 1.0,
-                    html5: true, // 如果需要 HTML5 模式
                     loop: audio.loop,
                 })
             ),
@@ -68,13 +69,19 @@ const useAudioStore = create<AudioStore>((set, get) => ({
             const { pool, index } = soundPool;
             // 从池中取出当前索引的音效
             const sound = pool[index];
-            // 如果音效正在播放，先停止它
-            if (sound.playing()) {
-                sound.stop();
+            const previous = lastVoice.get(sound)
+            if (previous !== undefined && sound.playing(previous)) {
+                if (soundPool.type === 'music') {
+                    sound.stop(previous)
+                } else {
+                    // Release only the displaced voice. The next hit can start immediately.
+                    sound.once('fade', () => sound.stop(previous), previous)
+                    sound.fade(Number(sound.volume(previous)), 0, 18, previous)
+                }
             }
-            // 播放音效
-            if (config?.volume) sound.volume(config.volume);
-            sound.play(config?.sprite ?? undefined);
+            const voice = sound.play(config?.sprite)
+            if (config?.volume !== undefined) sound.volume(config.volume, voice)
+            lastVoice.set(sound, voice)
 
             // 更新池的索引，循环回到头部
             soundPool.index = (index + 1) % pool.length;
