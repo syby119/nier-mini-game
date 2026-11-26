@@ -4,97 +4,71 @@ import PubSub from 'pubsub-js'
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 
+const SPAWN_FLASH_DURATION = 0.3
+
+const spawnFlashVertexShader = `
+  uniform float uTime;
+  varying vec2 vUv;
+
+  void main() {
+    vUv = uv;
+    float stretch = smoothstep(0.0, 1.0, uTime * 2.5);
+    vec3 stretched = position;
+    stretched.x *= mix(1.0, 2.0, stretch);
+    stretched.y *= mix(1.0, 0.05, stretch);
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(stretched, 1.0);
+  }
+`
+
+const spawnFlashFragmentShader = `
+  uniform float uTime;
+  uniform float uDuration;
+  varying vec2 vUv;
+
+  void main() {
+    float radialAlpha = 1.0 - smoothstep(0.0, 0.5, distance(vUv, vec2(0.5)));
+    float timeAlpha = 1.0 - smoothstep(0.0, uDuration, uTime);
+    float alpha = radialAlpha * timeAlpha;
+    vec3 baseColor = vec3(1.0, 0.12, 0.34);
+    gl_FragColor = vec4(mix(baseColor, baseColor * 3.0, alpha), alpha);
+  }
+`
 
 const SpawnLightEffect = ({ id }: { id: string }) => {
-  const materialRef = useRef<any>(null)
-  const elapsedTime = useRef(0) // 用于累积时间
-  const spawnLightEffectRef = useRef<any>(null)
+  const meshRef = useRef<THREE.Mesh>(null)
+  const uniforms = useMemo(() => ({
+    uTime: { value: 0 },
+    uDuration: { value: SPAWN_FLASH_DURATION },
+  }), [])
 
-  const vertexShader = `
-uniform float uTime;
+  useFixedFrameUpdate((_, delta) => {
+    const mesh = meshRef.current
+    if (!mesh?.visible) return
 
-varying vec2 vUv;
-varying float vStretchFactor;
-
-void main() {
-  vUv = uv;
-
-  // 时间控制拉伸
-  float stretchFactor = smoothstep(0.0, 1.0, clamp(uTime * 2.5, 0.0, 1.0));
-  vStretchFactor = stretchFactor;
-
-  // 挤压形变：从圆形到长方形
-  vec3 transformedPosition = position;
-  transformedPosition.x *= mix(1.0, 2.0, stretchFactor); // 拉长 x 轴
-  transformedPosition.y *= mix(1.0, 0.05, stretchFactor); // 压缩 y 轴
-
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(transformedPosition, 1.0);
-}
-
-`
-
-  const fragmentShader = `
-uniform float uTime;
-
-varying vec2 vUv;
-varying float vStretchFactor;
-
-void main() {
-  // 计算从中心的距离，用于圆形渐变
-  vec2 center = vec2(0.5, 0.5);
-  float dist = distance(vUv, center);
-
-  // 圆形渐隐
-  float radialAlpha = smoothstep(0.5, 0.0, dist);
-
-  // 时间渐隐
-  float timeAlpha = smoothstep(3.0, 0.0, clamp(uTime * 10.0, 0.0, 3.0));
-
-  // 最终透明度
-  float alpha = radialAlpha * timeAlpha;
-
-  // 自发光红色
-  vec3 baseColor = vec3(1.0, 0.12, 0.34); // 红色
-  vec3 glow = baseColor * 3.0; // 增强亮度模拟自发光
-
-  // 根据 alpha 混合基础颜色和发光效果
-  vec3 finalColor = mix(baseColor, glow, alpha);
-
-  gl_FragColor = vec4(finalColor, alpha);
-}
-`
-
-  useFixedFrameUpdate((state, delta) => {
-    if (materialRef.current && spawnLightEffectRef.current.visible) {
-      elapsedTime.current += delta
-      materialRef.current.uniforms.uTime.value = elapsedTime.current
-    }
+    uniforms.uTime.value = Math.min(uniforms.uTime.value + delta, SPAWN_FLASH_DURATION)
+    if (uniforms.uTime.value >= SPAWN_FLASH_DURATION) mesh.visible = false
   })
 
   useEffect(() => {
     const token = PubSub.subscribe(`enemySpawnLightEffect_${id}`, () => {
-      // 重置时间并显示效果
-      elapsedTime.current = 0
-      materialRef.current.uniforms.uTime.value = 0
-      spawnLightEffectRef.current.visible = true
+      const mesh = meshRef.current
+      if (!mesh) return
+      uniforms.uTime.value = 0
+      mesh.visible = true
     })
 
-    return () => {
-      PubSub.unsubscribe(token)
-    }
-  }, [])
+    return () => { PubSub.unsubscribe(token) }
+  }, [id, uniforms])
 
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} ref={spawnLightEffectRef} visible={false}>
-      <planeGeometry args={[1.6, 0.04, 1, 1]} />
+    <mesh ref={meshRef} rotation={[-Math.PI / 2, 0, 0]} visible={false}>
+      <planeGeometry args={[1.6, 0.04]} />
       <shaderMaterial
-        ref={materialRef}
-        vertexShader={vertexShader}
-        fragmentShader={fragmentShader}
-        uniforms={{
-          uTime: { value: 0 },
-        }}
-        transparent={true}
+        vertexShader={spawnFlashVertexShader}
+        fragmentShader={spawnFlashFragmentShader}
+        uniforms={uniforms}
+        transparent
+        depthWrite={false}
       />
     </mesh>
   )
