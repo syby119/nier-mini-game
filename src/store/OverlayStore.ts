@@ -16,7 +16,6 @@ interface OverlayStore {
     onlineResultOverlay: false,
     playerSummaryOverlay: false,
     requestPlayerInfoOverlay: false,
-    requestPlayerInfoPhase2Overlay: false,
     requestPlayerInfoPhase3Overlay: false,
   };
   

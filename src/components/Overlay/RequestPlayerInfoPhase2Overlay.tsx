@@ -1,121 +1,155 @@
+import { type KeyboardEvent, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useTranslations } from 'next-intl'
+import { supportPhrases } from '../../data/SupportPhrases'
+import { useMenuGamepad } from '../../hook/useMenuGamepad'
+import useAudioStore from '../../store/AudioStore'
 import usePlayerStore from '../../store/PlayerStore'
-import { useContext, useState } from "react"
-import { INieRButtonsConfigs, NieRCustomBox } from "./NieRCustomBox"
-import systemInfoStore from "../../store/SystemInfoStore";
-import { useTranslations } from "next-intl";
-import { useOverlayStore } from "../../store/OverlayStore";
+import GameDialog from './GameDialog'
+import styles from './SupportMessageEditor.module.css'
 
-export default function RequestPlayerInfoPhase2Overlay() {
-    const setShowOverlay = useOverlayStore((state) => state.setShowOverlay)
-    const [saveError, setSaveError] = useState(false)
-    const [startCloseAnimation, setStartCloseAnimation] = useState(false)
-    const [buttonDisabled, setButtonDisabled] = useState(false)
-    const [formValue, setFormValue] = useState({
-        content: '',
-        region: ''
-    })
-    const t = useTranslations()
+const fields = ['openings', 'connections', 'endings', 'regions'] as const
+const done = fields.length
+const wrap = (value: number, length: number) => (value + length) % length
 
-    const handleSaveShareInfo = async () => {
-        try {
-            setButtonDisabled(true)
-            setSaveError(false)
-            const req = await fetch('/api/createShareInfo', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    profileId: usePlayerStore.getState().playerShareInfo.profileId,
-                    content: formValue.content,
-                    region: formValue.region
-                })
-            })
-            if (!req.ok) throw new Error(String(req.status))
-            usePlayerStore.getState().setPlayerShareInfo(formValue)
-            setStartCloseAnimation(true)
-            setTimeout(() => {
-                setShowOverlay('requestPlayerInfoPhase2Overlay', false)
-                setShowOverlay('requestPlayerInfoPhase3Overlay', true)
-            }, 1500)
-        } catch (e) {
-            setButtonDisabled(false)
-            setSaveError(true)
-        }
+export default function RequestPlayerInfoPhase2Overlay({ onBack, onSent }: { onBack: () => void, onSent: () => void }) {
+  const t = useTranslations()
+  const player = usePlayerStore(state => state.playerShareInfo)
+  const [values, setValues] = useState([0, 0, 0, 0])
+  const [active, setActive] = useState(0)
+  const [editing, setEditing] = useState(false)
+  const [cursor, setCursor] = useState(0)
+  const [saving, setSaving] = useState(false)
+  const [failed, setFailed] = useState(false)
+  const lastField = useRef(0)
+  const controls = useRef<(HTMLButtonElement | null)[]>([])
+  const list = useRef<HTMLDivElement>(null)
+  const request = useRef<AbortController | null>(null)
+  const options: readonly string[] = active < done ? supportPhrases[fields[active]] : []
+  const segments = fields.map((field, i) => supportPhrases[field][values[i]])
+  const playClick = () => useAudioStore.getState().play('buttonClick')
+
+  useLayoutEffect(() => {
+    if (editing) list.current?.focus({ preventScroll: true })
+    else controls.current[active]?.focus({ preventScroll: true })
+  }, [active, editing])
+  useLayoutEffect(() => {
+    if (editing) list.current?.children[cursor]?.scrollIntoView({ block: 'nearest' })
+  }, [cursor, editing])
+  useEffect(() => () => request.current?.abort(), [])
+
+  function focusField(index: number) {
+    setActive(index)
+    if (index < done) lastField.current = index
+  }
+  function open(index: number) {
+    if (request.current) return
+    focusField(index)
+    setCursor(values[index])
+    setEditing(true)
+    playClick()
+  }
+  function choose(index: number) {
+    setValues(current => current.map((value, i) => i === active ? index : value))
+    setEditing(false)
+    setFailed(false)
+    playClick()
+  }
+  async function send() {
+    if (request.current) return
+    const controller = new AbortController()
+    request.current = controller
+    setFailed(false)
+    setSaving(true)
+    playClick()
+    const message = { content: segments.slice(0, 3).join(''), region: segments[3] }
+    try {
+      const response = await fetch('/api/createShareInfo', { method: 'POST', signal: controller.signal,
+        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ profileId: player.profileId, ...message }) })
+      if (!response.ok) throw new Error(String(response.status))
+      if (controller.signal.aborted) return
+      usePlayerStore.getState().setPlayerShareInfo(message)
+      onSent()
+    } catch {
+      if (controller.signal.aborted) return
+      request.current = null
+      setSaving(false)
+      setFailed(true)
     }
-
-    const handleCheckForm = () => {
-        if (formValue.content === '' || formValue.region === '') {
-            return
-        } else if (formValue.content.length > 30 || formValue.region.length > 15) {
-            return
-        } else {
-            handleSaveShareInfo()
-        }
+  }
+  function confirm() {
+    if (editing) choose(cursor)
+    else if (active === done) void send()
+    else open(active)
+  }
+  function back() {
+    if (request.current) return
+    playClick()
+    if (editing) setEditing(false)
+    else onBack()
+  }
+  function move(vertical: boolean, step: number) {
+    if (editing) {
+      if (vertical) setCursor(i => wrap(i + step, options.length))
+    } else if (vertical) focusField(active === done ? lastField.current : done)
+    else focusField(wrap((active === done ? lastField.current : active) + step, done))
+  }
+  function keydown(event: KeyboardEvent<HTMLDialogElement>) {
+    if (saving || event.altKey || event.ctrlKey || event.metaKey) return
+    const key = event.key
+    if (key === 'Escape' || key === 'Backspace') { event.preventDefault(); if (!event.repeat) back(); return }
+    if (key === 'Enter' || key === ' ') { event.preventDefault(); if (!event.repeat) confirm(); return }
+    if (['ArrowLeft', 'a', 'ArrowRight', 'd', 'ArrowUp', 'w', 'ArrowDown', 's'].includes(key)) {
+      event.preventDefault()
+      move(['ArrowUp', 'w', 'ArrowDown', 's'].includes(key), ['ArrowLeft', 'a', 'ArrowUp', 'w'].includes(key) ? -1 : 1)
+    } else if (editing && ['PageUp', 'PageDown', 'Home', 'End'].includes(key)) {
+      event.preventDefault()
+      setCursor(i => key === 'Home' ? 0 : key === 'End' ? options.length - 1 :
+        Math.max(0, Math.min(options.length - 1, i + (key === 'PageUp' ? -8 : 8))))
     }
+  }
+  useMenuGamepad(!saving, command => {
+    if (command === 'confirm') confirm()
+    else if (command === 'back') back()
+    else move(command === 'up' || command === 'down', command === 'up' || command === 'left' ? -1 : 1)
+  }, editing)
 
-    const buttonsConfigs: INieRButtonsConfigs[] = [
-        {
-            text: t('end'),
-            onClick: () => {
-                handleCheckForm()
-            },
-            isNeedAnimationFinish: false,
-        },
-    ]
+  function fieldButton(index: number) {
+    const field = fields[index]
+    return <button key={field} ref={node => { controls.current[index] = node }}
+      type="button" disabled={saving} tabIndex={editing ? -1 : 0} aria-haspopup="listbox"
+      aria-expanded={editing && active === index} aria-label={t('composer.' + field) + ' ' + segments[index]}
+      data-selected={active === index} onFocus={() => { if (!editing) focusField(index) }}
+      onClick={() => open(index)}>【 {segments[index]} 】</button>
+  }
 
-    return (
-        <NieRCustomBox buttonsConfigs={buttonsConfigs} startCloseAnimation={startCloseAnimation} buttonDisabled={buttonDisabled} disableGamePad>
-            <div className="text-2xl text-[#DAD4BB] bg-[#4E4B42] w-full text-start px-4 py-2">
-                <br />
-            </div>
-            <div className='p-4 flex flex-col gap-4 min-h-40 max-h-80 overflow-y-scroll custom-scrollbar'>
-                <form>
-                    {saveError && <p role="alert">{t('finale.saveError')}</p>}
-                    <div className="mb-4">
-                        <label className="block text-gray-700 text-sm font-bold mb-2">
-                            {t('message')}
-                        </label>
-                        <div className="flex text-[#4E4B42] items-center">
-                            <input className="border w-full rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none"
-                                value={formValue.content}
-                                onChange={(e) => {
-                                    setFormValue({
-                                        ...formValue,
-                                        content: e.target.value
-                                    })
-                                }}
-                                placeholder={t('placeHolderForMessage')}
-                                maxLength={30}
-                                disabled={startCloseAnimation}
-                            />
-                            <p>({formValue.content.length}/30)</p>
-                        </div>
-                        <p className="text-[#CD664D] text-sm h-3">{formValue.content == '' && t('pleaseFillInfo')}</p>
-                    </div>
-                    <div className="mb-4">
-                        <label className="block text-gray-700 text-sm font-bold mb-2">
-                            {t('region')}
-                        </label>
-                        <div className="flex text-[#4E4B42] items-center">
-                            <input className="border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none"
-                                value={formValue.region}
-                                onChange={(e) => {
-                                    setFormValue({
-                                        ...formValue,
-                                        region: e.target.value
-                                    })
-                                }}
-                                placeholder="USA"
-                                maxLength={15}
-                                disabled={startCloseAnimation}
-                            />
-                            <p>({formValue.region.length}/15)</p>
-                        </div>
-                        <p className="text-[#CD664D] text-sm h-3">{formValue.region == '' && t('pleaseFillInfo')}</p>
-                    </div>
-                </form>
-            </div>
-        </NieRCustomBox>
-    )
+  const hint = failed ? t('finale.saveError') : editing ? t(active === 3 ? 'composer.selectRegion'
+    : active === 1 ? 'composer.selectConnection' : 'composer.selectPhrase')
+    : t(active === done ? 'composer.ready' : 'composer.selectPart')
+  return <GameDialog className={styles.editor} data-finale="message" aria-label={t('composer.title')} onKeyDown={keydown}>
+    <div className={styles.preview} aria-label={t('composer.title')}>
+      <span className={styles.name}>{player.name}</span><span aria-hidden="true">「</span>
+      <div className={styles.sentence}>{fields.slice(0, 3).map((_, i) => fieldButton(i))}</div>
+      <span aria-hidden="true">」</span><div className={styles.location}>{fieldButton(3)}</div>
+    </div>
+    {editing && <div className={styles.menu}>
+      <span className={styles.rail} aria-hidden="true" />
+      <div ref={list} role="listbox" aria-label={t('composer.' + fields[active])}
+        tabIndex={0} aria-activedescendant={'message-option-' + cursor} className={styles.options}>
+        {options.map((option, i) => <div key={i} id={'message-option-' + i} role="option"
+          aria-selected={cursor === i} onPointerMove={event => { if (event.pointerType === 'mouse') setCursor(i) }}
+          onClick={() => choose(i)}>{option}</div>)}
+      </div>
+    </div>}
+    <div className={styles.completion}>
+      <span className={styles.rail} aria-hidden="true" />
+      <button type="button" ref={node => { controls.current[done] = node }} disabled={editing || saving}
+        data-selected={active === done} onFocus={() => focusField(done)} onClick={send}>{t('finish')}</button>
+    </div>
+    <p className={styles.hint} role={failed ? 'alert' : 'status'}>{hint}</p>
+    <footer className={styles.legend}>
+      <span><b aria-hidden="true">✥</b>{t('composer.select')}</span>
+      <button type="button" disabled={saving} tabIndex={-1} onClick={confirm}><b>A</b>{t('composer.confirm')}</button>
+      <button type="button" disabled={saving} tabIndex={-1} onClick={back}><b>B</b>{t('saves.back')}</button>
+    </footer>
+  </GameDialog>
 }

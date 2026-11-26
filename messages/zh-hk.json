@@ -46,6 +46,20 @@
   "mainTitle": "使用React Three Fiber和Three.js实现的NieR: Automata [E]结局小游戏",
   "shooting": "射击",
   "unlockDebugMenu": "已解鎖Debug菜單",
+  "composer": {
+    "title": "給其他玩家的留言",
+    "openings": "開場語句",
+    "connections": "接續詞",
+    "endings": "結尾語句",
+    "regions": "地區",
+    "selectPart": "請選擇編輯部分。",
+    "selectPhrase": "請選擇要輸入的語句。",
+    "selectConnection": "請選擇要輸入的接續詞。",
+    "selectRegion": "請選擇你的地區。",
+    "ready": "信息輸入完成。",
+    "select": "選擇",
+    "confirm": "確認"
+  },
   "saves": {
     "mainMenu": "主選單",
     "new": "新遊戲",

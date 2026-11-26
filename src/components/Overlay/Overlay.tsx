@@ -7,7 +7,6 @@ import ResultOverlay from './OnlineResultOverlay';
 import PlayerSummaryOverlay from './PlayerSummaryOverlay';
 import { pendingDonation } from '../../lib/endingSave';
 import FinaleSaveOverlay from './FinaleSaveOverlay';
-import RequestPlayerInfoPhase2Overlay from './RequestPlayerInfoPhase2Overlay';
 import NotificationOverlay from './NotificationOverlay';
 import { useOverlayStore } from '../../store/OverlayStore';
 import GamePauseOverlay from './GamePauseOverlay';
@@ -27,7 +26,6 @@ export default function Overlay() {
     const isShowOnlineResultOverlay = useOverlayStore((state) => state.isShowOverlay.onlineResultOverlay);
     const isShowPlayerSummaryOverlay = useOverlayStore((state) => state.isShowOverlay.playerSummaryOverlay);
     const isShowRequestPlayerInfoOverlay = useOverlayStore((state) => state.isShowOverlay.requestPlayerInfoOverlay);
-    const isShowRequestPlayerInfoPhase2Overlay = useOverlayStore((state) => state.isShowOverlay.requestPlayerInfoPhase2Overlay);
     const isShowRequestPlayerInfoPhase3Overlay = useOverlayStore((state) => state.isShowOverlay.requestPlayerInfoPhase3Overlay);
     useEffect(() => {
         if (booted.current) return
@@ -60,7 +58,6 @@ export default function Overlay() {
                 {isShowOnlineResultOverlay && <ResultOverlay />}
                 {isShowPlayerSummaryOverlay && <PlayerSummaryOverlay />}
                 {isShowRequestPlayerInfoOverlay && <FinaleSaveOverlay message />}
-                {isShowRequestPlayerInfoPhase2Overlay && <RequestPlayerInfoPhase2Overlay />}
                 {isShowRequestPlayerInfoPhase3Overlay && <FinaleSaveOverlay />}
             </>}
         </div>

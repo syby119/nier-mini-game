@@ -9,9 +9,10 @@ import systemInfoStore from '../../store/SystemInfoStore'
 import DialoguePage from './DialoguePage'
 import GameDialog from './GameDialog'
 import SaveTransfer from './SaveTransfer'
+import RequestPlayerInfoPhase2Overlay from './RequestPlayerInfoPhase2Overlay'
 import styles from './FinaleSaveOverlay.module.css'
 
-type Screen = 'dialogue' | 'upload' | 'saving'
+type Screen = 'dialogue' | 'message' | 'upload' | 'saving'
 
 export default function FinaleSaveOverlay({ message = false }: { message?: boolean }) {
   const t = useTranslations()
@@ -70,8 +71,7 @@ export default function FinaleSaveOverlay({ message = false }: { message?: boole
 
   function answer(index: number) {
     if (question && line === 45 && index === 0) {
-      setOverlay(overlay, false)
-      setOverlay('requestPlayerInfoPhase2Overlay', true)
+      setScreen('message')
     } else if (question && line !== 45 && index === 1) finish()
     else advance()
   }
@@ -79,6 +79,10 @@ export default function FinaleSaveOverlay({ message = false }: { message?: boole
   const light = screen === 'saving' || (screen === 'dialogue' && line >= 70)
   const uploaded = useCallback(() => { setLine(70); setScreen('dialogue') }, [])
   if (screen === 'upload') return <SaveTransfer run={run} onComplete={uploaded} onKeep={finish} />
+  if (screen === 'message') return <RequestPlayerInfoPhase2Overlay onBack={() => setScreen('dialogue')} onSent={() => {
+    setOverlay(overlay, false)
+    setOverlay('requestPlayerInfoPhase3Overlay', true)
+  }} />
 
   return (
     <GameDialog className={styles.finale} data-light={light} data-finale={screen}
