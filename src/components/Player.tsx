@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { useGraph } from '@react-three/fiber'
+import { useFrame, useGraph } from '@react-three/fiber'
 import { Html, useKeyboardControls } from '@react-three/drei';
 import { playerShipScale, usePlayerShip } from './PlayerShip';
 import { BallCollider, interactionGroups, quat, RapierRigidBody, RigidBody, vec3 } from '@react-three/rapier';
@@ -42,6 +42,11 @@ const lerpAngle = (start: number, end: number, t: number) => {
 };
 
 const gamepadManager = new GamepadManager(0.3);
+
+// In the 360p recording a formation shot first appears 15 px from its ship
+// and travels 32 px between volleys. The 0.15-unit orbit measures 26.3 px.
+const formationMuzzleOffset = 0.085
+const formationShotSpeed = 1.82
 
 export const Player = ({ showHitControls }: { showHitControls: boolean }) => {
     // console.log('Player')
@@ -143,63 +148,23 @@ export const Player = ({ showHitControls }: { showHitControls: boolean }) => {
         event.preventDefault(); // 阻止默认的右键菜单
     };
 
-    const shootProjectile = () => {
-        if (playerInfo.playerHealth <= 0) return
+    const shootVolley = (center: THREE.Vector3, heading: number, support: SupportFormation | null, age: number) => {
         playerLocalSummery.current.totalShootCount += 1
-        playAudio('playerShot')
-        const direction = vec3().set(
-            Math.sin(player.current.rotation.y) * 2,
-            0,
-            Math.cos(player.current.rotation.y) * 2
-        );
-
-        // 计算射弹的旋转，由于模型的朝向横向的，我们要转成纵向的
-        const projectileRotation = quat().setFromUnitVectors(
-            vec3({ x: 1, y: 0, z: 0 }), // 模型的朝向
-            direction.clone().normalize() // 射弹方向
-        );
-
-        // 添加额外的旋转，将模型绕自身的 X 轴旋转 45 度
-        const additionalRotation = quat().setFromAxisAngle(
-            vec3({ x: 1, y: 0, z: 0 }), // 绕 X 轴旋转
-            Math.PI / 4 // 45 度
-        );
-
-        // 合并两个旋转
-        projectileRotation.multiply(additionalRotation);
+        const direction = vec3().set(Math.sin(heading), 0, Math.cos(heading))
+        const modelAxis = vec3().set(1, 0, 0)
+        const projectileRotation = quat().setFromUnitVectors(modelAxis, direction)
+            .multiply(quat().setFromAxisAngle(modelAxis, Math.PI / 4))
+        const speed = support ? formationShotSpeed : 2
+        const muzzle = center.clone().addScaledVector(direction, support ? formationMuzzleOffset + speed * age : 0)
 
         const fireFrom = (position: THREE.Vector3) => {
-            PubSub.publish('shootProjectile', { id: Math.random(), position, direction, projectileRotation })
+            PubSub.publishSync('shootProjectile', { id: Math.random(), position, direction, speed, projectileRotation })
         }
-        fireFrom(vec3(rb.current?.translation()))
-        formation.current?.forEachReady(fireFrom)
+        fireFrom(muzzle)
+        support?.forEachReadyOffset(offset => fireFrom(offset.clone().add(muzzle)))
     }
 
-    const lastShotTime = useRef(0); // 用于存储上次射击时间
     const playerEffectsSpawnTime = useRef(0); // 用于存储上次生成玩家特效的时间
-    useFixedFrameUpdate((state, delta) => {
-        if (isPaused) return
-        if (disableMove.current) {
-            return
-        }
-        //如果同时按下鼠标右键和左键
-        if (isShooting.current) {
-            const currentTime = state.clock.getElapsedTime(); // 获取当前时间
-            if (currentTime - lastShotTime.current >= shootingInterval) { // 检查间隔
-                shootProjectile();
-                lastShotTime.current = currentTime; // 更新上次射击时间
-            }
-        }
-        //如果按下gamepad的R键
-        if (gamepadManager.isConnected() && (gamepadManager.getState().buttons["RB"] || gamepadManager.getState().buttons["R1"])) {
-            const currentTime = state.clock.getElapsedTime(); // 获取当前时间
-            if (currentTime - lastShotTime.current >= shootingInterval) { // 检查间隔
-                shootProjectile();
-                lastShotTime.current = currentTime; // 更新上次射击时间
-            }
-        }
-
-    });
 
     useEffect(() => {
 
@@ -345,9 +310,43 @@ export const Player = ({ showHitControls }: { showHitControls: boolean }) => {
                     })
                 }
             }
-
-            formation.current?.update(delta, rbTranslation, player.current.rotation.y, state.viewport.width, state.viewport.height)
         }
+    })
+
+    const shotCooldown = useRef(0)
+    const previousCenter = useRef(new THREE.Vector3())
+    const previousHeading = useRef(0)
+    useFrame(({ viewport }, frameDelta) => {
+        if (isPaused || disableMove.current || playerInfo.playerHealth <= 0 || !rb.current) return
+        const delta = Math.min(frameDelta, 0.5) // Rapier's variable-step limit
+        const center = vec3(rb.current.translation())
+        const heading = player.current.rotation.y
+        const support = formation.current
+        // The formation fires on whole 60 Hz game ticks, six ticks per volley by default.
+        const interval = support ? Math.round(shootingInterval * 60) / 60 : shootingInterval
+        const buttons = gamepadManager.isConnected() ? gamepadManager.getState().buttons : undefined
+        const firing = isShooting.current || buttons?.RB || buttons?.R1
+        let wait = shotCooldown.current
+        let remaining = delta
+
+        if (firing && wait <= remaining) {
+            playAudio('playerShot')
+            if (wait === 0 || !support || interval === 0) wait = remaining
+            // Sample each volley at its scheduled instant, including when a frame spans two volleys.
+            do {
+                remaining -= wait
+                const fraction = delta > 0 ? remaining / delta : 0
+                const shotCenter = center.clone().lerp(previousCenter.current, fraction)
+                const shotHeading = lerpAngle(heading, previousHeading.current, fraction)
+                support?.update(wait, shotCenter, shotHeading, viewport.width, viewport.height)
+                shootVolley(shotCenter, shotHeading, support, remaining)
+                wait = interval
+            } while (interval > 0 && wait <= remaining)
+        }
+        shotCooldown.current = Math.max(0, wait - remaining)
+        if (remaining > 0) support?.update(remaining, center, heading, viewport.width, viewport.height)
+        previousCenter.current.copy(center)
+        previousHeading.current = heading
     })
 
     const onHit = () => {
@@ -416,6 +415,7 @@ export const Player = ({ showHitControls }: { showHitControls: boolean }) => {
             playerRb.setAngvel({ x: 0, y: 0, z: 0 }, true);
             player.current.position.set(0, 0, 0);
             player.current.rotation.y = 0;
+            shotCooldown.current = 0
             resetPlayerPositionRef.current = false
         }
     })

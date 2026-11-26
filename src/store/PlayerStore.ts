@@ -8,6 +8,7 @@ export interface IProjectile {
     id: any;
     position: THREE.Vector3;
     direction: THREE.Vector3;
+    speed?: number;
     projectileRotation: THREE.Quaternion;
 }
 

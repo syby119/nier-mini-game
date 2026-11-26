@@ -31,7 +31,7 @@ function nextPilot(roster: string[], start: number, wingmen: Wingman[]) {
 
 export interface SupportFormation {
     update(delta: number, center: THREE.Vector3Like, heading: number, width: number, height: number): void
-    forEachReady(visit: (position: THREE.Vector3) => void): void
+    forEachReadyOffset(visit: (offset: THREE.Vector3) => void): void
     sacrificeWingman(): { position: THREE.Vector3, pilot: string } | undefined
 }
 
@@ -86,10 +86,10 @@ export default function OtherPlayerContainer({ ref, pilots }: { ref: Ref<Support
                 }
             })
         },
-        forEachReady(visit) {
+        forEachReadyOffset(visit) {
             for (const wingman of wingmen) {
                 if (wingman.state === 'ready' && wingman.ship.current) {
-                    visit(wingman.ship.current.getWorldPosition(new THREE.Vector3()))
+                    visit(wingman.ship.current.position)
                 }
             }
         },

@@ -5,15 +5,15 @@ import * as THREE from 'three';
 import systemInfoStore from '../store/SystemInfoStore';
 import { useFixedFrameUpdate } from '../hook/useFixedFrameUpdate';
 
+// Keep complete volleys in flight across the visible arena, even from opposite corners.
+const PLAYER_PROJECTILE_COUNT = 7 * 32
+
 export default function PlayerProjectile() {
     const [overRangeLimit, setOverRangeLimit] = useState<"airWall" | "maxRange">("maxRange")
     const projectileRigidBodies = useRef<RapierRigidBody[]>([]);
     const projectilesIndex = useRef<number>(-1)
-    const originalVelocities = useRef<{ [key: number]: { x: number; y: number; z: number } }>({});
     const playerInstancedMeshRef = useRef<THREE.InstancedMesh>(null);
     const maxProjectilesRange = { x: 5, z: 5 }
-    const projectileSpeed = 2
-    const PLAYER_PROJECTILE_COUNT = 100
     const idlePositionBox = {
         value: vec3({ x: 0, y: -1, z: 10 }),
         minY: -1,
@@ -53,29 +53,13 @@ export default function PlayerProjectile() {
 
     const shootProjectile = (data: IProjectile) => {
         projectilesIndex.current = (projectilesIndex.current + 1) % PLAYER_PROJECTILE_COUNT
-        const position = vec3({
-            x: data.position.x,
-            y: data.position.y,
-            z: data.position.z
-        })
-        const velocity = vec3({
-            x: data.direction.x,
-            y: 0,
-            z: data.direction.z,
-        }).normalize().multiplyScalar(projectileSpeed);;
-        projectileRigidBodies.current[projectilesIndex.current].setTranslation(position, true);
-        projectileRigidBodies.current[projectilesIndex.current].setRotation(data.projectileRotation, true);
-        projectileRigidBodies.current[projectilesIndex.current].setLinvel({
-            x: velocity.x,
-            y: velocity.y,
-            z: velocity.z
-        }, true);
-        projectileRigidBodies.current[projectilesIndex.current].setAngvel({ x: 0, y: 0, z: 0 }, true);
-        originalVelocities.current[projectilesIndex.current] = {
-            x: velocity.x,
-            y: velocity.y,
-            z: velocity.z
-        };
+        const projectile = projectileRigidBodies.current[projectilesIndex.current]
+        const velocity = vec3().set(data.direction.x, 0, data.direction.z).normalize().multiplyScalar(data.speed ?? 2)
+        projectile.setEnabled(true)
+        projectile.setTranslation(data.position, true)
+        projectile.setRotation(data.projectileRotation, true)
+        projectile.setLinvel(velocity, true)
+        projectile.setAngvel({ x: 0, y: 0, z: 0 }, true)
     }
 
     const onHit = (manifold: any, target: CollisionTarget, other: CollisionTarget) => {
@@ -99,6 +83,7 @@ export default function PlayerProjectile() {
         projectile.setLinvel(vec3({ x: 0, y: 0, z: 0 }), true)
         projectile.setTranslation(idlePosition, true)
         projectile.setRotation({ x: 0, y: 0, z: 0, w: 1 }, true)
+        projectile.setEnabled(false)
     }
 
     useFixedFrameUpdate(() => {
@@ -115,6 +100,7 @@ export default function PlayerProjectile() {
     })
 
     useEffect(() => {
+        projectileRigidBodies.current.forEach(projectile => projectile.setEnabled(false))
         const shootProjectileToken = PubSub.subscribe('shootProjectile', (msg: string, data: IProjectile) => {
             shootProjectile(data)
         })
