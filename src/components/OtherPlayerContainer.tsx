@@ -1,4 +1,3 @@
-import { BallCollider, interactionGroups, type RapierCollider } from '@react-three/rapier'
 import { useControls } from 'leva'
 import { createRef, useImperativeHandle, useMemo, useRef, useState, type Ref, type RefObject } from 'react'
 import * as THREE from 'three'
@@ -11,8 +10,6 @@ const orbitDegreesPerSecond = 300
 const arrivalTime = 1.1
 const firstWaveSpacing = 1.1
 const replacementDelay = 2.8
-const enemyBullets = interactionGroups(0, [2, 3])
-const noImpulse = interactionGroups(0, [])
 
 type WingmanState = 'waiting' | 'incoming' | 'ready'
 
@@ -22,7 +19,6 @@ interface Wingman {
     pilot: string
     origin: THREE.Vector3
     ship: RefObject<THREE.Group | null>
-    collider: RapierCollider | null
 }
 
 function nextPilot(roster: string[], start: number, wingmen: Wingman[]) {
@@ -36,7 +32,7 @@ function nextPilot(roster: string[], start: number, wingmen: Wingman[]) {
 export interface SupportFormation {
     update(delta: number, center: THREE.Vector3Like, heading: number, width: number, height: number): void
     forEachReady(visit: (position: THREE.Vector3) => void): void
-    takeHit(collider: RapierCollider | undefined, allowCoreHit: boolean): { position: THREE.Vector3, pilot: string } | undefined
+    sacrificeWingman(): { position: THREE.Vector3, pilot: string } | undefined
 }
 
 export default function OtherPlayerContainer({ ref, pilots }: { ref: Ref<SupportFormation>, pilots?: string[] }) {
@@ -52,7 +48,6 @@ export default function OtherPlayerContainer({ ref, pilots }: { ref: Ref<Support
         pilot: '',
         origin: new THREE.Vector3(),
         ship: createRef<THREE.Group>(),
-        collider: null,
     })), [helpPlayerCount])
     const phase = useRef(0)
     const arrivals = useRef(0)
@@ -62,7 +57,7 @@ export default function OtherPlayerContainer({ ref, pilots }: { ref: Ref<Support
             phase.current = (phase.current - THREE.MathUtils.degToRad(rotationSpeed) * delta) % fullCircle
             wingmen.forEach((wingman, index) => {
                 const ship = wingman.ship.current
-                if (!ship || !wingman.collider) return
+                if (!ship) return
                 const angle = phase.current + fullCircle * index / wingmen.length
                 ship.position.set(centerRange * Math.cos(angle), 0, centerRange * Math.sin(angle))
                 ship.rotation.y = heading
@@ -88,9 +83,7 @@ export default function OtherPlayerContainer({ ref, pilots }: { ref: Ref<Support
                     }, (1 - t) ** 2)
                     if (t < 1) return
                     wingman.state = 'ready'
-                    wingman.collider.setEnabled(true)
                 }
-                wingman.collider.setTranslationWrtParent(ship.position)
             })
         },
         forEachReady(visit) {
@@ -100,18 +93,14 @@ export default function OtherPlayerContainer({ ref, pilots }: { ref: Ref<Support
                 }
             }
         },
-        takeHit(collider, allowCoreHit) {
-            // A direct hit takes this ship. A hit to the core is absorbed by a ship already in formation.
-            const struck = collider && wingmen.find(wingman => wingman.collider?.handle === collider.handle)
-            if (!struck && !allowCoreHit) return
-            const wingman = struck ?? wingmen.find(wingman => wingman.state === 'ready')
+        sacrificeWingman() {
+            const wingman = wingmen.find(wingman => wingman.state === 'ready')
             const ship = wingman?.ship.current
-            if (!wingman || !ship || wingman.state !== 'ready') return
+            if (!wingman || !ship) return
             const position = ship.getWorldPosition(new THREE.Vector3())
             wingman.state = 'waiting'
             wingman.elapsed = -replacementDelay
             ship.visible = false
-            wingman.collider?.setEnabled(false)
             return { position, pilot: wingman.pilot }
         },
     }), [wingmen, roster, centerRange, rotationSpeed])
@@ -121,11 +110,6 @@ export default function OtherPlayerContainer({ ref, pilots }: { ref: Ref<Support
             {wingmen.map((wingman, i) => (
                 <group key={helpPlayerCount + '-' + i} ref={wingman.ship} name={'other_player_' + i} visible={false}>
                     <PlayerShip />
-                    <BallCollider name={'support_collider_' + i} args={[0.044]} density={0}
-                        collisionGroups={enemyBullets} solverGroups={noImpulse} ref={collider => {
-                            wingman.collider = collider
-                            collider?.setEnabled(wingman.state === 'ready')
-                        }} />
                 </group>
             ))}
         </group>

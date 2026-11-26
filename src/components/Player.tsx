@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { useGraph } from '@react-three/fiber'
 import { Html, useKeyboardControls } from '@react-three/drei';
 import { playerShipScale, usePlayerShip } from './PlayerShip';
-import { BallCollider, CollisionTarget, interactionGroups, quat, RapierRigidBody, RigidBody, useBeforePhysicsStep, vec3 } from '@react-three/rapier';
+import { BallCollider, interactionGroups, quat, RapierRigidBody, RigidBody, vec3 } from '@react-three/rapier';
 import * as THREE from 'three';
 import PubSub from 'pubsub-js';
 import { PlayerOnHitExpandingRingEffect } from './PlayerOnHitEffects';
@@ -56,8 +56,6 @@ export const Player = ({ showHitControls }: { showHitControls: boolean }) => {
     const player = useRef<any>(null);
     const rb = useRef<RapierRigidBody>(null);
     const formation = useRef<SupportFormation>(null);
-    const absorbedProjectiles = useRef(new Set<number>())
-    useBeforePhysicsStep(() => absorbedProjectiles.current.clear())
     const playerRotationTarget = useRef<any>(0);
     const rotationTarget = useRef<any>(0);
     const [, get] = useKeyboardControls();
@@ -352,20 +350,11 @@ export const Player = ({ showHitControls }: { showHitControls: boolean }) => {
         }
     })
 
-    const onHit = (target: CollisionTarget | undefined, other: CollisionTarget) => {
+    const onHit = () => {
         const { playerHealth, needOtherPlayerHelp } = usePlayerStore.getState().playerInfo
-        const projectile = other.rigidBodyObject?.userData.type
-        if (playerHealth <= 0 || useGamePauseStore.getState().isPaused) return
-        if (projectile !== 'enemy_normal_projectile' && projectile !== 'enemy_unbroken_projectile') return
-        if (target?.colliderObject?.name === 'player_on_hit_expanding_ring_hit_box') return
-
-        if (!needOtherPlayerHelp && isPlayerOnHit.current) return
-        // One projectile can contact more than one collider during a physics step.
-        const projectileHandle = other.rigidBody?.handle
-        if (projectileHandle !== undefined && absorbedProjectiles.current.has(projectileHandle)) return
-        const loss = needOtherPlayerHelp ? formation.current?.takeHit(target?.collider, !isPlayerOnHit.current) : undefined
+        if (playerHealth <= 0 || isPlayerOnHit.current || useGamePauseStore.getState().isPaused) return
+        const loss = needOtherPlayerHelp ? formation.current?.sacrificeWingman() : undefined
         if (needOtherPlayerHelp && !loss) return
-        if (loss && projectileHandle !== undefined) absorbedProjectiles.current.add(projectileHandle)
         isPlayerOnHit.current = true
         playerInvincibilityTimeAccumulatedTime.current = 0
         setPlayerOnHitExpandingRingHitBoxSize(0)
@@ -488,9 +477,6 @@ export const Player = ({ showHitControls }: { showHitControls: boolean }) => {
                 collisionGroups={interactionGroups(0, [100, 1, 2, 3])}
                 colliders={false}
                 userData={{ type: 'player' }}
-                onCollisionEnter={({ target, other }) => {
-                    onHit(target, other)
-                }}
             >
                 <group ref={player} position={[0, 0, 0]} name='player_rigidbody_group'>
                     <primitive object={playerModel} scale={playerShipScale} />
@@ -498,6 +484,10 @@ export const Player = ({ showHitControls }: { showHitControls: boolean }) => {
                         collisionGroups={interactionGroups(0, [100, 1, 2, 3])}
                         name="player_collider"
                         args={[0.048]} // 动态调整球体碰撞体的半径
+                        onCollisionEnter={({ other }) => {
+                            const type = other.rigidBodyObject?.userData.type
+                            if (type === 'enemy_normal_projectile' || type === 'enemy_unbroken_projectile') onHit()
+                        }}
                     />
                     <BallCollider
                         collisionGroups={interactionGroups(0, [1, 2, 3])}//不和墙壁碰撞
@@ -507,9 +497,7 @@ export const Player = ({ showHitControls }: { showHitControls: boolean }) => {
                     />
                     <PlayerOnHitExpandingRingEffect />
                     {process.env.NODE_ENV === 'development' && showHitControls && <Html>
-                        <button className="text-white top-5 absolute" onClick={() => {
-                            onHit(undefined, { rigidBodyObject: { userData: { type: 'enemy_normal_projectile' } } } as any)
-                        }}>
+                        <button className="text-white top-5 absolute" onClick={onHit}>
                             OnHIt
                         </button>
                         <button className="text-white top-10 absolute" onClick={() => {
