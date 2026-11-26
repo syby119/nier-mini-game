@@ -1,3 +1,4 @@
+import { englishAdditional, englishCast, japaneseEnsemble, japaneseLeads, type VoiceCredit } from './VoiceCredits';
 import { vec3 } from "@react-three/rapier";
 import * as THREE from "three";
 import { generateUUID } from "three/src/math/MathUtils";
@@ -24,6 +25,8 @@ export interface EnemyProps {
   isNeedChidAllDead?: boolean;
   strongType: StrongType;
   enableShoot?: boolean;
+  castCredit?: 'role' | 'performer' | 'target';
+  onLeave?: (id: string) => void;
   shootIntervalTime?: number; //0.6s
   health: number;
   points?: number;
@@ -66,6 +69,45 @@ export const EmptyEnemyData: EnemyProps[] = Array.from(
   }
 );
 
+type VoiceTarget = [text: string, x: number, z: number, strength: StrongType];
+
+function voiceWave(phase: string, nextPhase: string, rows: VoiceCredit[],
+  targets: VoiceTarget[], requiredChildren: number, checkpoint = false): EnemyProps[] {
+  const entrances = new Map<string, number>();
+  for (const [time, role, performer] of rows) {
+    entrances.set(role, time);
+    entrances.set(performer, time);
+  }
+
+  // The firing positions and points belong to the existing wave. Short role
+  // captions travel across the screen independently of the required credits.
+  const scored = targets.map(([text, x, z, strongType], index): EnemyProps => ({
+    id: `enemy_${phase}_${index}`, phase, text, strongType, castCredit: 'target',
+    initPosition: vec3({ x, y: 0, z }), spawnDelay: entrances.get(text) ?? 0,
+    health: strongType === StrongType.NORMAL ? 15 : 3, points: 100, childrenIds: [],
+  }));
+  scored[0].nextPhase = nextPhase;
+  scored[0].childrenIds = scored.slice(1, requiredChildren + 1).map(enemy => enemy.id);
+  scored[0].isNeedChidAllDead = true;
+  scored[0].isImportantPhase = checkpoint;
+
+  const fixedNames = new Set(scored.map(enemy => enemy.text));
+  const result = [...scored];
+  rows.forEach(([spawnDelay, role, performer], row) => {
+    [role, performer].forEach((text, column) => {
+      if (!text || fixedNames.has(text)) return;
+      const side = column === 0 ? 1 : -1;
+      const x = side * (0.36 + (row % 5) * 0.13);
+      result.push({
+        id: `cast_${phase}_${row}_${column}`, phase, text, spawnDelay,
+        initPosition: vec3({ x, y: 0, z: 0 }), castCredit: column === 0 ? 'role' : 'performer',
+        strongType: StrongType.VERY_EASY, health: 1, points: 0, enableShoot: false, childrenIds: [],
+      });
+    });
+  });
+  return result;
+}
+
 // Selected from the 2017 English staff roll and grouped for the web game's waves.
 // In-game credits: https://www.youtube.com/watch?v=ZrG3WaeIwhk
 export const EnemyData: EnemyProps[] = [
@@ -96,7 +138,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_2_0",
     initPosition: vec3({ x: -0.6, y: 0, z: 0.3 }),
-    text: "CAST",
+    text: "Japanese Voices",
     phase: "2",
     nextPhase: "3",
     childrenIds: [],
@@ -104,311 +146,43 @@ export const EnemyData: EnemyProps[] = [
     points: 100,
     health: 15,
   },
-  {
-    id: "enemy_3_0",
-    initPosition: vec3({ x: 0, y: 0, z: 0 }),
-    text: "Japanese Voices",
-    phase: "3",
-    nextPhase: "4",
-    childrenIds: [],
-    strongType: StrongType.NORMAL,
-    points: 100,
-    health: 15,
-  },
-  {
-    id: "enemy_4_0",
-    initPosition: vec3({ x: 0.5, y: 0, z: 0 }),
-    text: "2B",
-    phase: "4",
-    nextPhase: "5",
-    childrenIds: ["enemy_4_1"],
-    isNeedChidAllDead: true,
-    strongType: StrongType.NORMAL,
-    points: 100,
-    health: 15,
-  },
-  {
-    id: "enemy_4_1",
-    initPosition: vec3({ x: -0.5, y: 0, z: 0 }),
-    text: "Yui Ishikawa",
-    phase: "4",
-    childrenIds: [],
-    strongType: StrongType.NORMAL,
-    points: 100,
-    health: 15,
-  },
-  {
-    id: "enemy_5_0",
-    initPosition: vec3({ x: 0, y: 0, z: 0 }),
-    text: "9S",
-    phase: "5",
-    nextPhase: "6",
-    childrenIds: [
-      "enemy_5_1",
-      "enemy_5_2",
-      "enemy_5_3",
-      "enemy_5_4",
-      "enemy_5_5",
-      "enemy_5_6",
-    ],
-    isNeedChidAllDead: true,
-    strongType: StrongType.NORMAL,
-    points: 100,
-    health: 15,
-  },
-  {
-    id: "enemy_5_1",
-    initPosition: vec3({ x: 0.6, y: 0, z: 0.3 }),
-    text: "Daisuke Namikawa",
-    phase: "5",
-    childrenIds: [],
-    strongType: StrongType.VERY_EASY,
-    points: 100,
-    health: 3,
-    spawnDelay: 2,
-  },
-  {
-    id: "enemy_5_2",
-    initPosition: vec3({ x: -0.6, y: 0, z: 0.3 }),
-    text: "Tatsuhisa Suzuki",
-    phase: "5",
-    childrenIds: [],
-    strongType: StrongType.VERY_EASY,
-    points: 100,
-    health: 3,
-    spawnDelay: 2.3,
-  },
-  {
-    id: "enemy_5_3",
-    initPosition: vec3({ x: -0.3, y: 0, z: 0.1 }),
-    text: "Hiroki Yasumoto",
-    phase: "5",
-    childrenIds: [],
-    strongType: StrongType.VERY_EASY,
-    points: 100,
-    health: 3,
-    spawnDelay: 3,
-  },
-  {
-    id: "enemy_5_4",
-    initPosition: vec3({ x: 0.1, y: 0, z: 0.6 }),
-    text: "Kaoru Akiyama",
-    phase: "5",
-    childrenIds: [],
-    strongType: StrongType.VERY_EASY,
-    points: 100,
-    health: 3,
-    spawnDelay: 3.5,
-  },
-  {
-    id: "enemy_5_5",
-    initPosition: vec3({ x: 0.8, y: 0, z: 0.1 }),
-    text: "Mai Kadowaki",
-    phase: "5",
-    childrenIds: [],
-    strongType: StrongType.VERY_EASY,
-    points: 100,
-    health: 3,
-    spawnDelay: 3.5,
-  },
-  {
-    id: "enemy_5_6",
-    initPosition: vec3({ x: -0.5, y: 0, z: 0.5 }),
-    text: "Natsuki Hanae",
-    phase: "5",
-    childrenIds: [],
-    strongType: StrongType.NORMAL,
-    points: 100,
-    health: 15,
-  },
-  {
-    id: "enemy_5_7",
-    initPosition: vec3({ x: 0.5, y: 0, z: 0.1 }),
-    text: "A2",
-    phase: "5",
-    childrenIds: [],
-    strongType: StrongType.NORMAL,
-    points: 100,
-    health: 15,
-  },
-  {
-    id: "enemy_5_8",
-    initPosition: vec3({ x: 0.5, y: 0, z: 0.5 }),
-    text: "Ayaka Suwa",
-    phase: "5",
-    childrenIds: [],
-    strongType: StrongType.VERY_EASY,
-    points: 100,
-    health: 3,
-  },
-  {
-    id: "enemy_6_0",
-    initPosition: vec3({ x: 0, y: 0, z: 0 }),
-    text: "English Voices",
-    phase: "6",
-    isImportantPhase: true,
-    nextPhase: "7",
-    childrenIds: ["enemy_6_1", "enemy_6_2", "enemy_6_3"],
-    isNeedChidAllDead: true,
-    strongType: StrongType.NORMAL,
-    points: 100,
-    health: 15,
-  },
-  {
-    id: "enemy_6_1",
-    initPosition: vec3({ x: 0.8, y: 0, z: 0.5 }),
-    text: "2B",
-    phase: "6",
-    childrenIds: [],
-    strongType: StrongType.NORMAL,
-    points: 100,
-    health: 15,
-    spawnDelay: 2,
-  },
-  {
-    id: "enemy_6_2",
-    initPosition: vec3({ x: 0.2, y: 0, z: 0.2 }),
-    text: "Kira Buckland",
-    phase: "6",
-    childrenIds: [],
-    strongType: StrongType.EASY,
-    points: 100,
-    health: 3,
-    spawnDelay: 2,
-  },
-  {
-    id: "enemy_6_3",
-    initPosition: vec3({ x: -0.5, y: 0, z: 0.5 }),
-    text: "9S",
-    phase: "6",
-    childrenIds: [],
-    strongType: StrongType.EASY,
-    points: 100,
-    health: 3,
-    spawnDelay: 2,
-  },
-  {
-    id: "enemy_6_4",
-    initPosition: vec3({ x: 0, y: 0, z: 0.7 }),
-    text: "Kyle McCarley",
-    phase: "6",
-    childrenIds: [],
-    strongType: StrongType.EASY,
-    points: 100,
-    health: 3,
-    spawnDelay: 4,
-  },
-  {
-    id: "enemy_6_5",
-    initPosition: vec3({ x: 0.5, y: 0, z: 0.5 }),
-    text: "A2",
-    phase: "6",
-    childrenIds: [],
-    strongType: StrongType.EASY,
-    points: 100,
-    health: 3,
-    spawnDelay: 4,
-  },
-  {
-    id: "enemy_6_6",
-    initPosition: vec3({ x: -0.5, y: 0, z: 0.2 }),
-    text: "Cherami Leigh",
-    phase: "6",
-    childrenIds: [],
-    strongType: StrongType.EASY,
-    points: 100,
-    health: 3,
-    spawnDelay: 6,
-  },
-  {
-    id: "enemy_6_7",
-    initPosition: vec3({ x: 0.2, y: 0, z: 0.1 }),
-    text: "Greg Chun",
-    phase: "6",
-    childrenIds: [],
-    strongType: StrongType.EASY,
-    points: 100,
-    health: 3,
-    spawnDelay: 8,
-  },
-  {
-    id: "enemy_7_0",
-    initPosition: vec3({ x: -0.8, y: 0, z: 0.5 }),
-    text: "Additional Voices",
-    phase: "7",
-    nextPhase: "7_1",
-    childrenIds: ["enemy_7_1", "enemy_7_2", "enemy_7_3"],
-    isNeedChidAllDead: true,
-    strongType: StrongType.NORMAL,
-    points: 100,
-    health: 15,
-  },
-  {
-    id: "enemy_7_1",
-    initPosition: vec3({ x: 0.8, y: 0, z: 0.3 }),
-    text: "Robbie Daymond",
-    phase: "7",
-    childrenIds: [],
-    strongType: StrongType.EASY,
-    points: 100,
-    health: 3,
-    spawnDelay: 2,
-  },
-  {
-    id: "enemy_7_2",
-    initPosition: vec3({ x: -0.8, y: 0, z: 0.5 }),
-    text: "Kyle Hebert",
-    phase: "7",
-    childrenIds: [],
-    strongType: StrongType.EASY,
-    points: 100,
-    health: 3,
-    spawnDelay: 2,
-  },
-  {
-    id: "enemy_7_3",
-    initPosition: vec3({ x: -0.8, y: 0, z: 0.6 }),
-    text: "Carrie Keranen",
-    phase: "7",
-    childrenIds: [],
-    strongType: StrongType.EASY,
-    points: 100,
-    health: 3,
-    spawnDelay: 4,
-  },
-  {
-    id: "enemy_7_4",
-    initPosition: vec3({ x: 0.5, y: 0, z: 0.5 }),
-    text: "Lauren Landa",
-    phase: "7",
-    childrenIds: [],
-    strongType: StrongType.EASY,
-    points: 100,
-    health: 3,
-    spawnDelay: 4,
-  },
-  {
-    id: "enemy_7_5",
-    initPosition: vec3({ x: -0.5, y: 0, z: 0.2 }),
-    text: "Wendee Lee",
-    phase: "7",
-    childrenIds: [],
-    strongType: StrongType.EASY,
-    points: 100,
-    health: 3,
-    spawnDelay: 6,
-  },
-  {
-    id: "enemy_7_6",
-    initPosition: vec3({ x: 0.2, y: 0, z: 0.1 }),
-    text: "Julie Maddalena",
-    phase: "7",
-    childrenIds: [],
-    strongType: StrongType.EASY,
-    points: 100,
-    health: 3,
-    spawnDelay: 8,
-  },
+  ...voiceWave("3", "4", japaneseLeads.slice(0, 1), [
+    ["Yui Ishikawa", 0, 0, StrongType.NORMAL],
+  ], 0),
+  ...voiceWave("4", "5", japaneseLeads.slice(1), [
+    ["Natsuki Hanae", 0.5, 0, StrongType.NORMAL],
+    ["Ayaka Suwa", -0.5, 0, StrongType.NORMAL],
+  ], 1),
+  ...voiceWave("5", "6", japaneseEnsemble, [
+    ["Additional Voices", 0, 0, StrongType.NORMAL],
+    ["Daisuke Namikawa", 0.6, 0.3, StrongType.VERY_EASY],
+    ["Tatsuhisa Suzuki", -0.6, 0.3, StrongType.VERY_EASY],
+    ["Hiroki Yasumoto", -0.3, 0.1, StrongType.VERY_EASY],
+    ["Kaoru Akiyama", 0.1, 0.6, StrongType.VERY_EASY],
+    ["Mai Kadowaki", 0.8, 0.1, StrongType.VERY_EASY],
+    ["Chiaki Kanou", -0.5, 0.5, StrongType.NORMAL],
+    ["Aoi Yuki", 0.5, 0.1, StrongType.NORMAL],
+    ["Katsuyuki Yamazaki", 0.5, 0.5, StrongType.VERY_EASY],
+  ], 6),
+  ...voiceWave("6", "7", englishCast, [
+    ["English Voices", 0, 0, StrongType.NORMAL],
+    ["Kira Buckland", 0.8, 0.5, StrongType.NORMAL],
+    ["Kyle McCarley", 0.2, 0.2, StrongType.EASY],
+    ["Darin De Paul", -0.5, 0.5, StrongType.EASY],
+    ["Cherami Leigh", 0, 0.7, StrongType.EASY],
+    ["Greg Chun", 0.5, 0.5, StrongType.EASY],
+    ["Ray Chase", -0.5, 0.2, StrongType.EASY],
+    ["DC Douglas", 0.2, 0.1, StrongType.EASY],
+  ], 3, true),
+  ...voiceWave("7", "7_1", englishAdditional, [
+    ["Additional Voices", -0.8, 0.5, StrongType.NORMAL],
+    ["Robbie Daymond", 0.8, 0.3, StrongType.EASY],
+    ["Kyle Hebert", -0.8, 0.5, StrongType.EASY],
+    ["Carrie Keranen", -0.8, 0.6, StrongType.EASY],
+    ["Lauren Landa", 0.5, 0.5, StrongType.EASY],
+    ["Wendee Lee", -0.5, 0.2, StrongType.EASY],
+    ["Julie Maddalena", 0.2, 0.1, StrongType.EASY],
+  ], 3),
   {
     id: "enemy_7_1_0",
     initPosition: vec3({ x: 0.8, y: 0, z: 0.2 }),
@@ -425,7 +199,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_7_1_1",
     initPosition: vec3({ x: 0.8, y: 0, z: 0.5 }),
-    text: "Executive Producer",
+    text: "EXECUTIVE PRODUCER",
     phase: "7_1",
     childrenIds: [],
     isNeedChidAllDead: true,
@@ -448,7 +222,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_8_1",
     initPosition: vec3({ x: -0.5, y: 0, z: 0.3 }),
-    text: "Producer",
+    text: "PRODUCER",
     phase: "8",
     childrenIds: [],
     strongType: StrongType.EASY,
@@ -1354,7 +1128,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_30_0",
     initPosition: vec3({ x: 0, y: 0, z: 0 }),
-    text: "Business Division VI",
+    text: "BUSINESS DIVISION VI",
     phase: "30",
     nextPhase: "31",
     childrenIds: [],
@@ -1651,7 +1425,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_38_0",
     initPosition: vec3({ x: 0.8, y: 0, z: 0 }),
-    text: "Weight of the World",
+    text: "SONG",
     phase: "38",
     nextPhase: "40",
     childrenIds: [
@@ -1671,7 +1445,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_38_1",
     initPosition: vec3({ x: -0.6, y: 0, z: 0.54 }),
-    text: "Song",
+    text: "Keiichi Okabe",
     phase: "38",
     childrenIds: [],
     isImportantPhase: true,
@@ -1804,7 +1578,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_44_0",
     initPosition: vec3({ x: 0.5, y: 0, z: 0 }),
-    text: "Producer",
+    text: "PRODUCER",
     phase: "44",
     nextPhase: "45",
     childrenIds: [],
@@ -1828,7 +1602,7 @@ export const EnemyData: EnemyProps[] = [
   {
     id: "enemy_46_0",
     initPosition: vec3({ x: 0, y: 0, z: 0 }),
-    text: "President & CEO",
+    text: "PRESIDENT & CEO",
     phase: "46",
     nextPhase: "final",
     childrenIds: [],

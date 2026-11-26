@@ -26,13 +26,15 @@ export const Enemy = ({
     health,
     points,
     spawnDelay,
+    castCredit,
+    onLeave,
     onDeath = () => { }
 }: EnemyProps) => {
     const [debugOptions, setDebugOptions] = useState({
         shootPortVisible: false,
         enableShooting: enableShoot
     })
-    const [spawnDelayReady, spawnDelayCancel] = useTimeout((spawnDelay || 0) * 1000);
+    const [spawnDelayReady, spawnDelayCancel] = useTimeout(castCredit ? 0 : (spawnDelay || 0) * 1000);
     const { play: playAudio, setVolume, stop: stopAudio } = useAudioStore();
     const enemyRef = useRef<any>(null)
     const textRef = useRef<any>(null)
@@ -59,6 +61,8 @@ export const Enemy = ({
         timeOffset: Math.random() * Math.PI * 2, // 随机时间偏移，范围 [0, 2π]
     };
     const healthRef = useRef<number>(health)
+    const scrolling = castCredit === 'role' || castCredit === 'performer'
+    const castTime = useRef(-(spawnDelay || 0))
     const { viewport, size } = useThree();
     const spawnEffect = useRef<boolean>(false)
     const isPause = useGamePauseStore(state => state.isPaused)
@@ -72,6 +76,8 @@ export const Enemy = ({
         timer: null
     })
     const fontSize = useMemo(() => {
+        if (castCredit === 'role') return 0.03
+        if (castCredit === 'performer') return 0.045
         if (strongType == StrongType.VERY_EASY) {
             return 0.04
         } else if (strongType == StrongType.EASY) {
@@ -85,7 +91,7 @@ export const Enemy = ({
         } else if (strongType == StrongType.EXTREME) {
             return 0.06
         }
-    }, [])
+    }, [castCredit, strongType])
     const movedDistance = useRef<number>(0)
     //相反x轴
     let reverseX = -(initPosition.x)
@@ -413,7 +419,7 @@ export const Enemy = ({
         const totalHight = initPosition.z + size.height / 1024
         enemyRef.current.setTranslation(vec3({ x: initPosition.x, y: initPosition.y, z: totalHight }))
         textRef.current.visible = true
-        if (spawnDelayReady()) {
+        if (castCredit || spawnDelayReady()) {
             enableMoveToInitPositionAndShootingPortScript()
         }
     }
@@ -598,7 +604,7 @@ export const Enemy = ({
 
     useEffect(() => {
         if (cuboidSize.some((e) => e == 0)) return
-        if (type == "DEBUG") return
+        if (type == "DEBUG" || castCredit) return
         if (enemyRef.current && textRef.current) {
             changeEnemyColliderGroup([])
             moveToInitPosition()
@@ -606,6 +612,7 @@ export const Enemy = ({
     }, [cuboidSize, spawnDelayReady()])
 
     useEffect(() => {
+        if (castCredit) return
         const unsubscribe = useGamePauseStore.subscribe(state => state.isPaused, subCheckSpawnTime)
         const timer = tempTimerRef.current
         return () => {
@@ -614,11 +621,38 @@ export const Enemy = ({
         }
     }, [])
 
+    // Optional cast entries cross the picture in about nine seconds in the recording.
+    const moveCastCredit = (age: number) => {
+        if (age >= 9) {
+            healthRef.current = 0
+            textRef.current.visible = false
+            changeEnemyColliderGroup([])
+            onLeave?.(id)
+            return
+        }
+        if (!textRef.current.visible) {
+            textRef.current.visible = true
+            changeEnemyColliderGroup([0])
+        }
+        const edge = Math.max(0, viewport.width / 2 - cuboidSize[0])
+        const x = THREE.MathUtils.clamp(initPosition.x + 0.14 * Math.sin(age + initPosition.x), -edge, edge)
+        enemyRef.current.setTranslation({ x, y: 0, z: viewport.height * (0.55 - 1.1 * age / 9) }, true)
+    }
+
     useFixedFrameUpdate((state, delta) => {
         tempTimerRef.current.accumulativeTime += delta
         if (isPause) return
         if (type == "DEBUG") return
         if (!enemyRef.current || !textRef.current) return
+        if (castCredit) {
+            const age = castTime.current += delta
+            if (age < 0 || !cuboidSize[0] || healthRef.current <= 0) return
+            if (scrolling) {
+                moveCastCredit(age)
+                return
+            }
+            if (!textRef.current.visible) moveToInitPosition()
+        }
         handleUpdateColorOnFrame(delta)
         handleShakeTextOnFrame()
         handleShootingOnFrame(delta)

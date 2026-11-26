@@ -93,6 +93,15 @@ export const EnemySystem = React.memo(() => {
         }, 4000)
     }
 
+    const removeEnemy = (id: string) => {
+        setEnemiesMap(prev => {
+            if (!prev.has(id)) return prev
+            const next = new Map(prev)
+            next.delete(id)
+            return next
+        })
+    }
+
     const enemyOnDeath = (
         id: string,
         _phase?: string,
@@ -104,11 +113,7 @@ export const EnemySystem = React.memo(() => {
     ) => {
         //避免同个敌人多次死亡
         if (defeatedEnemyIds.current.has(id)) {
-            setEnemiesMap(prev => {
-                const newMap = new Map(prev);
-                newMap.delete(id)
-                return newMap;
-            });
+            removeEnemy(id)
             return
         }
         addCombatStats({ points, enemiesDefeated: 1 });
@@ -124,11 +129,7 @@ export const EnemySystem = React.memo(() => {
             isNeedChidAllDead,
             childrenIds
         });
-        setEnemiesMap(prev => {
-            const newMap = new Map(prev);
-            newMap.delete(id)
-            return newMap;
-        });
+        removeEnemy(id)
     }
 
     const checkPendingEnemies = (deadEnemy: {
@@ -164,6 +165,7 @@ export const EnemySystem = React.memo(() => {
                     key={enemy.id}
                     {...enemy}
                     onDeath={enemyOnDeath}
+                    onLeave={removeEnemy}
                 />
             ))}
         </>

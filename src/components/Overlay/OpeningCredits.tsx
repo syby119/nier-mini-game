@@ -1,31 +1,17 @@
 import type { CSSProperties } from 'react'
+import { englishAdditional, englishCast, japaneseEnsemble, japaneseLeads, type VoiceCredit } from '../../data/VoiceCredits'
 import styles from './OpeningCredits.module.css'
 
 type Staff = string | [role: string, name: string]
 
+function voiceStaff(credits: VoiceCredit[]): Staff[] {
+  return credits.map(([, role, performer]) => [role, performer])
+}
+
 const sections: [heading: string, staff: Staff[]][] = [
   ['DIRECTOR', ['YOKO TARO']],
-  ['Japanese Voices', [
-    ['2B', 'Yui Ishikawa'], ['9S', 'Natsuki Hanae'], ['A2', 'Ayaka Suwa'],
-    ['Eve', 'Tatsuhisa Suzuki'], ['Adam', 'Daisuke Namikawa'], ['Commander', 'Chiaki Kanou'],
-    ['Pod 042', 'Hiroki Yasumoto'], ['Pod 153', 'Kaoru Akiyama'], ['Emil', 'Mai Kadowaki'],
-    ['Pascal', 'Aoi Yuki'], ['Devola / Popola', 'Ryoko Shiraishi'], ['Terminal α / Terminal β', 'Jouji Nakata'],
-    ['Anemone, Operator 21O', 'Mary Hatsumi'], ['Operator 6O', 'Keiko Isobe'], ['Simone, Jackass', 'Kaori Kawabuchi'],
-    ['Announcement, Resource Recovery Unit', 'Ruka Endo'], ['Additional Voices', 'Katsuyuki Yamazaki'],
-    ['', 'Yuka Nagayoshi'], ['', 'Saori Okamoto'], ['', 'Yu Seki'], ['', 'Kenichi Hoshino'],
-    ['', 'Takuya Inagaki'], ['', 'Saki Yonemoto'], ['', 'Tomohiro Fujitaka'], ['', 'Aki Nagao'],
-  ]],
-  ['English Voices', [
-    ['2B', 'Kira Buckland'], ['9S', 'Kyle McCarley'], ['A2', 'Cherami Leigh'], ['Adam', 'Greg Chun'],
-    ['Eve', 'Ray Chase'], ['Pod 042', 'DC Douglas'], ['Pod 153', 'Abby Trott'], ['Emil', 'Julie Ann Taylor'],
-    ['Pascal', 'Alexis Tipton'], ['Devola / Popola', 'Claudia Lenz'], ['Terminal α / Terminal β', 'Darin De Paul'],
-    ['Anemone', 'Erica Lindbeck'], ['Operator 6O', 'Cassandra Lee Morris'], ['Operator 21O', 'Connor Kelly'],
-    ['Simone', 'Erin Fitzgerald'], ['Jackass', 'Amanda Miller'], ['Additional Voices', 'Robbie Daymond'],
-    ['', 'Ben Diskin'], ['', 'Kyle Hebert'], ['', 'David Keefir'], ['', 'Carrie Keranen'], ['', 'Lauren Landa'],
-    ['', 'Wendee Lee'], ['', 'Julie Maddalena'], ['', 'Matt Mercer'], ['', 'Max Mittelman'], ['', 'Russell Nash'],
-    ['', 'Bryce Papenbrook'], ['', 'Nicolas Roye'], ['', 'Michelle Ruff'], ['', 'Tara Sands'], ['', 'Rena Strober'],
-    ['', 'Sarah Ann Williams'],
-  ]],
+  ['Japanese Voices', voiceStaff([...japaneseLeads, ...japaneseEnsemble])],
+  ['English Voices', voiceStaff([...englishCast, ...englishAdditional])],
   ['PlatinumGames Inc.', []],
   ['EXECUTIVE PRODUCER', ['Atsushi Inaba']],
   ['PRODUCER', ['Eijiro Nishimura']],
