@@ -1,65 +1,99 @@
-# NieR: Automata | The [E] nding game
+# NieR:Automata · [E] 结局网页版
 
-# [Live Demo](https://nier-mini-game.vercel.app)
+制作人员名单滚过屏幕，Pod 042 决定抢救即将被删除的数据。你接手一架小飞机，穿过弹幕，逐行击破名单上的职称和姓名。这款浏览器射击游戏以《NieR:Automata》的 E 结局为原型，支持键鼠和手柄。
 
-This project was born when I was learning React Three Fiber.
+[本地运行](#本地运行) · [开发者选关](#跳到指定关卡) · [早期版本在线试玩](https://nier-mini-game.vercel.app/zh-hk)
 
----
+![网页版游戏首页，白色花海上方显示 NieR:Automata 标题和「新遊戲」「繼續遊戲」两个选项](git_image/cover.webp)
 
-![License](https://img.shields.io/badge/license-MIT-green)  
-[![React Three Fiber](https://img.shields.io/badge/React%20Three%20Fiber-%20?style=flat&colorA=000000&colorB=000000)](https://npmjs.com/package/@react-three/fiber)  
-[![React Three Rapier](https://img.shields.io/badge/React%20Three%20Rapier-%20?style=flat&colorA=000000&colorB=000000)](https://github.com/pmndrs/react-three-rapier)  
-[![Next.js](https://img.shields.io/badge/Next.js-%20?style=flat&colorA=000000&colorB=000000)](https://nextjs.org/)
+## 本地运行
 
----
+本地开发使用 Node.js 22 和 pnpm。已有源码时，在网页版仓库根目录从 `pnpm install` 开始。
 
-## Overview
+```sh
+git clone https://github.com/syby119/nier-mini-game.git
+cd nier-mini-game
+pnpm install
+pnpm dev
+```
 
-This project is inspired by the **E-Ending of Nier Automata** and was created during my journey of learning **React Three Fiber**. Built with **Next.js**, the game logic is powered by **React Three Rapier**, and post-processing effects like **SSAO** are used to simulate the game's visual style.  
+打开[本地游戏首页](http://localhost:3000/zh-hk)。界面使用繁体中文。图片、模型、字体和音频都随仓库提供，位于 [public/](public/)。
 
-The project makes extensive use of ChatGPT to generate particle effects and some logic processing.
+Pod 042 和 Pod 153 默认在中国大陆、港澳台及日本使用日语配音，其他地区使用英语。服务端未提供地区时，游戏会读取浏览器的首选语言和地区。也可以手动选择整局使用的配音。[日语](http://localhost:3000/zh-hk?voice=ja) · [英语](http://localhost:3000/zh-hk?voice=en)
 
----
+## 开始游戏
 
-## Development
+- **「新遊戲」**　输入玩家名创建存档。制作人员名单开始滚动，跟随 Pod 对话做出选择，名单倒放后进入射击。
+- **「繼續遊戲」**　选择已有存档，点击「開始射擊」，直接从第一波 `DIRECTOR` 开始新的一局。
+- **战斗中重试**　被击毁后选择继续，会从当前制作名单段落的检查点重新开打。
 
-Install dependencies with `pnpm install` and run `pnpm dev`. The game opens at [localhost:3000/zh-hk](http://localhost:3000/zh-hk).
+每个存档都保存在当前浏览器里。选档时可以查看游玩局数、通关次数、最高分、累计击破数、游玩时长和每局记录。战斗中每五秒保存一次统计，切走标签页或离开页面时也会保存，中途退出的对局同样计入历史。
 
-Pod 042 and Pod 153 use the original Japanese recordings in Japan, mainland China, Hong Kong, Macao and Taiwan, and English elsewhere. When the host supplies no country, the game uses the browser’s preferred language and region. To choose a dub for the whole game, open the [Japanese version](http://localhost:3000/zh-hk?voice=ja) or the [English version](http://localhost:3000/zh-hk?voice=en).
+| 战斗操作 | 键盘和鼠标 | 手柄 |
+| --- | --- | --- |
+| 移动 | W / A / S / D | 左摇杆 |
+| 瞄准 | 按住鼠标左键，移动指针 | 右摇杆 |
+| 连续射击 | 按住左键瞄准后，再按住右键 | 按住 RB / R1 |
+| 暂停或恢复 | Esc | Start / Options |
 
-| Path under `src/` | Responsibility |
+<details>
+<summary>援护与通关后的存档（含结局内容）</summary>
+
+多次被击毁后，可以接受其他玩家的援护。乐曲从独唱转入合唱，支援机围绕本机列阵齐射。本机中弹时会损失一架支援机，随后有新的飞机补位。
+
+通关后可以给下一位玩家留言，也可以选择捐出这份存档。确认捐出且上传成功后，游戏会从当前浏览器移除这份存档及其游玩记录。
+
+</details>
+
+## 开发与调试
+
+游戏使用 Next.js、TypeScript 和 React Three Fiber。Three.js 渲染场景，Rapier 处理碰撞，Zustand 管理游戏状态。
+
+### 跳到指定关卡
+
+用 `pnpm dev` 启动后，按 **F2** 或点击右下角的「選關」即可按制作人员名称或关卡编号选择起点。也可以收藏下列本地地址，直接复现对应场景。
+
+| 场景 | 本地入口 |
 | --- | --- |
-| `app/`, `pages/api/` | Next.js pages, locale routing and HTTP endpoints |
-| `game/` | Canvas and overlay composition, shared game state and battle session lifecycle |
-| `features/cover/`, `features/opening/`, `features/rescue/`, `features/ending/` | Title menu, opening credits, retry and rescue, results and save donation |
-| `features/combat/` | Player and support formation, enemies and credit waves, projectiles and hit effects |
-| `features/saves/`, `features/community/` | Browser profiles and run history, pending donations and community data |
-| `features/audio/` | Music cues and loops, sound effects and Pod dialogue mixing |
-| `features/developer/` | Stage picker, stage URLs and debug controls |
-| `shared/` | Reusable UI, gamepad input and Three.js helpers |
-| `server/` | Score and donation persistence for the HTTP handlers |
+| 第一波，导演字幕 | [DIRECTOR](http://localhost:3000/zh-hk?stage=0) |
+| 概念美术段落 | [CONCEPT ART](http://localhost:3000/zh-hk?stage=10_1) |
+| 最终战，带支援编队和合唱 | [Yosuke Matsuda](http://localhost:3000/zh-hk?stage=final&support=1) |
+| 通关后的成绩画面 | [结算](http://localhost:3000/zh-hk?stage=end) |
 
-Run `pnpm format` to format the source, styles and configuration. Use `pnpm format:check`, `pnpm typecheck` and `pnpm build` to verify changes.
+### 从哪里改
 
-## Developer stage selection
+| 要修改的内容 | 代码入口 |
+| --- | --- |
+| 游戏入口、场景与界面组装 | [页面入口](src/app/%5Blocale%5D/page.tsx)、[GameCanvas.tsx](src/game/GameCanvas.tsx)、[GameOverlays.tsx](src/game/GameOverlays.tsx) |
+| 封面、滚动与倒放的制作名单 | [cover/](src/features/cover/)、[opening/](src/features/opening/) |
+| 飞机、弹幕、字幕敌人与检查点 | [combat/](src/features/combat/)、[波次配置](src/features/combat/enemies/waves/) |
+| 音乐循环、合唱切换与 Pod 配音 | [audio/](src/features/audio/) |
+| 游玩记录、死亡重试与结局 | [对局生命周期](src/game/battleSession.ts)、[saves/](src/features/saves/)、[rescue/](src/features/rescue/)、[ending/](src/features/ending/) |
+| 排行榜、留言与存档上传 | [community/](src/features/community/)、[API 路由](src/pages/api/)、[服务端存储](src/server/playerSaves.ts) |
 
-Run `pnpm dev` and press **F2** or click **選關** to choose a stage by ID and credit name. Each jump starts at the selected wave. After a defeat, retrying returns to the start of that credit section, just as in normal play. You can also open or bookmark a stage URL.
+### 社区数据
 
-- [Concept art, stage 10_1](http://localhost:3000/zh-hk?stage=10_1)
-- [Final battle with the support formation](http://localhost:3000/zh-hk?stage=final&support=1)
-- [Results screen](http://localhost:3000/zh-hk?stage=end)
+本地开发默认将排行榜、留言和捐档数据写入服务端的 `.nier-saves/`。要用 MongoDB 验证这些功能，在仓库根目录的 `.env.local` 中填写连接地址，然后重启开发服务。游戏会使用 `nier` 数据库的 `player` 集合。
 
-## Preview
-![Demo](/git_image/demo.png)
-![Demo1](/git_image/demo1.png)
-![Demo2](/git_image/demo2.png)
-![Demo3](/git_image/demo3.png)
-![Demo4](/git_image/demo4.png)
+```dotenv
+MONGODB_URI=mongodb://127.0.0.1:27017/nier
+```
 
-## Acknowledgements
+### 检查与构建
 
-The Japanese Pod dialogue comes from the original game audio collected in the [NieR: Automata sound archive](https://steamcommunity.com/groups/nierMnM/discussions/2/135512625246228407/?ctp=4).
+```sh
+pnpm format
+pnpm format:check
+pnpm typecheck
+pnpm build
+```
 
-This project uses sound effects from [Mugen87's Nier repository](https://github.com/Mugen87/nier) and references several examples from **React Three Fiber/Drei**. Special thanks to **Mugen87** and **Wawa Sensei** for their inspiring code examples.  
+构建完成后，运行 `pnpm exec next start` 可在本地预览生产版本。
 
-Feel free to contribute! 🚀
+## 来源与许可
+
+项目始于一次 React Three Fiber 学习练习，部分粒子效果和游戏逻辑由 ChatGPT 辅助实现。图形实现参考了 Wawa Sensei 的教程和 Drei 的示例。[Drei 示例](https://github.com/pmndrs/drei) · [早期战斗截图](git_image/demo1.png)
+
+部分音效取自 Mugen87 的 NieR 项目，Pod 的日语对白取自玩家整理的原作录音。[Mugen87/nier](https://github.com/Mugen87/nier) · [日语音频档案](https://steamcommunity.com/groups/nierMnM/discussions/2/135512625246228407/?ctp=4)
+
+项目代码采用 [MIT 许可证](LICENSE)。
